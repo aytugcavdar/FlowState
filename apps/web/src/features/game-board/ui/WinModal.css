@@ -1,0 +1,110 @@
+/* ============================================================
+   WinModal — Kazanma ekranı
+============================================================ */
+
+.win-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: win-overlay-in 0.3s ease;
+}
+
+@keyframes win-overlay-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.win-modal-card {
+    max-width: 420px;
+    width: 90%;
+    padding: 2.5rem 2rem;
+    border-radius: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.25rem;
+    text-align: center;
+}
+
+@keyframes pop-in {
+    0%   { transform: scale(0.7); opacity: 0; }
+    80%  { transform: scale(1.05); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pop {
+    animation: pop-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.win-confetti-emoji {
+    font-size: 3.5rem;
+    line-height: 1;
+}
+
+.win-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--color-cyan);
+    margin: 0;
+}
+
+.win-subtitle {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+.win-stats {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    background: rgba(255,255,255,0.05);
+    border-radius: 1rem;
+    padding: 1rem 1.5rem;
+    width: 100%;
+    justify-content: center;
+}
+
+.win-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.win-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-yellow);
+}
+
+.win-stat-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.win-stat-divider {
+    width: 1px;
+    height: 2rem;
+    background: var(--border-color);
+}
+
+.win-actions {
+    display: flex;
+    gap: 0.75rem;
+    width: 100%;
+    flex-direction: column;
+}
+
+.win-actions .btn {
+    width: 100%;
+    padding: 0.85rem;
+    font-size: 1rem;
+}
