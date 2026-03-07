@@ -3,7 +3,7 @@
 // Cache-first strateji ile statik varlıkları önbelleğe alır.
 // ============================================================
 
-const CACHE_NAME = 'flowstate-v1';
+const CACHE_NAME = 'flowstate-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -55,7 +55,21 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Statik varlıklar için cache-first
+  // HTML sayfaları için Network-First (Her zaman en güncel sürümü almalı)
+  if (request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Statik varlıklar (JS, CSS, Resimler) için cache-first
   event.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
