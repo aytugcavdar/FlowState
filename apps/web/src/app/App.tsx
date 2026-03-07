@@ -12,6 +12,7 @@ import { GamePage } from '@/pages/GamePage';
 import { CampaignPage } from '@/pages/CampaignPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AchievementsPage } from '@/pages/AchievementsPage';
+import { NotFoundPage } from '@/pages/NotFoundPage';
 
 export function App() {
     return (
@@ -25,9 +26,11 @@ export function App() {
                         <Route path="/campaign" element={<CampaignPage />} />
                         <Route path="/leaderboard" element={<LeaderboardPage />} />
                         <Route path="/achievements" element={<AchievementsPage />} />
+                        <Route path="*" element={<NotFoundPage />} />
                     </Route>
                 </Routes>
             </HashRouter>
         </Provider>
     );
 }
+

@@ -20,6 +20,28 @@ import {
   type CalculatedFlowPath,
 } from '@flowstate/game-engine';
 
+// ─── Seeded RNG (günlük bulmaca için) ───────────────────────
+/** Basit fakat yeterli mulberry32 PRNG */
+function mulberry32(seed: number) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 0xFFFFFFFF;
+  };
+}
+
+/** Bugünün tarihinden deterministik bir sayı üretir */
+function getTodaysSeed(): number {
+  const now = new Date();
+  const dateStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  let hash = 0;
+  for (let i = 0; i < dateStr.length; i++) {
+    hash = (Math.imul(31, hash) + dateStr.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
 /** Oyun store durumu */
 interface GameState {
   // ─── Veri ───────────────────────────────────────────────
@@ -44,6 +66,8 @@ interface GameState {
   startPuzzle: (definition: PuzzleDefinition, puzzleId?: string) => void;
   /** Rastgele pratik puzzle üret */
   startPractice: (gridSize: number, difficulty: number) => void;
+  /** Bugünün sabit günlük bulmacasını başlat */
+  startDaily: () => void;
   /** Özel kampanya bölümü başlat */
   startCampaignLevel: (levelId: number) => void;
   /** Eğitim bölümü başlat */
@@ -115,6 +139,20 @@ export const useGameStore = create<GameState>()(
         const generator = new LevelGenerator();
         const definition = generator.generate({ gridSize, difficulty });
         get().startPuzzle(definition, `practice-${Date.now()}`);
+      },
+
+      // ─── Günlük Bulmaca Başlat ──────────────────────────────
+      startDaily: () => {
+        const seed = getTodaysSeed();
+        const rng = mulberry32(seed);
+        // Seeded bir LevelGenerator yapamadığımız için,
+        // seed'den türetilmiş sabit gridSize/difficulty kullanıyoruz.
+        const gridSize = 6 + (seed % 3); // 6, 7 ya da 8
+        const difficulty = 4 + Math.floor(rng() * 4); // 4-7 arası
+        const generator = new LevelGenerator();
+        const definition = generator.generate({ gridSize, difficulty, maxAttempts: 500 });
+        const todayKey = `daily-${new Date().toISOString().slice(0, 10)}`;
+        get().startPuzzle(definition, todayKey);
       },
 
       // ─── Kampanya Bölümü Başlat ─────────────────────────────
@@ -243,20 +281,39 @@ export const useGameStore = create<GameState>()(
 
       // ─── Geri Al ──────────────────────────────────────────
       undoMove: () => {
-        const { undoStack, status } = get();
-        if (undoStack.length === 0 || status !== 'playing') return;
+        const { undoStack, board: currentBoard, status } = get();
+        if (undoStack.length === 0 || status !== 'playing' || !currentBoard) return;
 
-        // Mevcut board'un puzzle tanımındaki boardunu seri-dışı yap
-        // Basit yaklaşım: son snapshot'a dön
+        // Son snapshot'u al ve board'u geri yükle
         const newStack = [...undoStack];
-        newStack.pop(); // Son kaydedilen durumu çıkar (geri dönülecek)
+        const snapshot = newStack.pop()!; // en son kaydedilen durum
 
-        // Not: Gerçek undo, board'un serialize/deserialize ile çalışır
-        // v1.0'da basitleştirilmiş — hareket sayısını azalt
-        set(state => ({
-          moveCount: Math.max(0, state.moveCount - 1),
-          undoStack: newStack,
-        }));
+        try {
+          const restoredTileConfigs = JSON.parse(snapshot) as import('@flowstate/shared-types').TileConfig[][];
+          // Mevcut board'un definition'unu al, sadece tile'ları değiştir
+          const def: import('@flowstate/shared-types').PuzzleDefinition = {
+            gridSize: currentBoard.gridSize,
+            tiles: restoredTileConfigs,
+            sources: currentBoard.getSources().map(s => ({ row: s.pos.row, col: s.pos.col, color: s.color })),
+            sinks: currentBoard.getSinks().map(s => ({ row: s.pos.row, col: s.pos.col, requiredColors: s.requiredColors })),
+          };
+          const restoredBoard = Board.fromDefinition(def);
+          const flowResult = FlowCalculator.calculate(restoredBoard);
+          const validation = FlowValidator.checkWin(restoredBoard, flowResult);
+
+          set(state => ({
+            board: restoredBoard,
+            flowResult,
+            flowPaths: flowResult.flowPaths,
+            solved: validation.solved,
+            status: validation.solved ? 'solved' : 'playing',
+            moveCount: Math.max(0, state.moveCount - 1),
+            undoStack: newStack,
+          }));
+        } catch {
+          // Geri yükleme başarısız — sadece stack'i temizle
+          set({ undoStack: newStack });
+        }
       },
 
       // ─── Zamanlayıcı ──────────────────────────────────────

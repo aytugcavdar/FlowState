@@ -1,6 +1,5 @@
 /* ============================================================
-   GamePage Stilleri (v2)
-   Daha temiz, panel-free, tam ekran oyun.
+   GamePage Stilleri (v3)
    ============================================================ */
 
 .game-page {
@@ -19,4 +18,51 @@
     align-items: center;
     width: 100%;
     max-width: 700px;
+}
+
+/* ─── Pratik Modu Kurulum Paneli ─────────────────────────── */
+.practice-setup {
+    width: 100%;
+    max-width: 480px;
+    padding: 2.5rem 2rem;
+    border-radius: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.practice-setup h2 {
+    font-size: 1.6rem;
+    margin: 0 0 0.25rem;
+    color: var(--color-cyan);
+}
+
+.setup-label {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    display: block;
+    margin-top: 0.75rem;
+}
+
+.setup-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border-color);
+    outline: none;
+    margin-top: 0.5rem;
+    cursor: pointer;
+}
+
+.setup-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--color-cyan);
+    box-shadow: 0 0 8px var(--color-cyan);
+    cursor: pointer;
 }

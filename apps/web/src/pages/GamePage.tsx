@@ -1,45 +1,92 @@
 // ============================================================
-// GamePage — Oyun sayfası (v2)
-// Config paneli yok — otomatik progresif zorluk.
+// GamePage — Oyun sayfası (v3)
+// /play → Günlük bulmaca   /practice → Seçimli pratik modu
 // ============================================================
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { GameBoard, useGameStore } from '@/features/game-board';
+import { WinModal } from '@/features/game-board/ui/WinModal';
 import './GamePage.css';
 
-/** Çözülen puzzle sayısına göre progresif zorluk */
-function getProgressiveConfig(solvedCount: number): { gridSize: number; difficulty: number } {
-    // User requested starting at 10x10 natively
-    return { gridSize: 10, difficulty: Math.min(10, 5 + Math.floor(solvedCount / 4)) };
+/** Pratik modu seçim paneli */
+function PracticeSetup({ onStart }: { onStart: (gridSize: number, difficulty: number) => void }) {
+    const [gridSize, setGridSize] = useState(7);
+    const [difficulty, setDifficulty] = useState(4);
+
+    return (
+        <div className="practice-setup glass-panel neon-border" id="practice-setup">
+            <h2>🎯 Pratik Modu</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
+                Izgara boyutu ve zorluk seviyesini seç.
+            </p>
+
+            <label className="setup-label">Izgara Boyutu: <strong>{gridSize}×{gridSize}</strong></label>
+            <input
+                type="range" min={4} max={10} value={gridSize}
+                onChange={e => setGridSize(Number(e.target.value))}
+                className="setup-slider"
+                id="slider-grid"
+            />
+
+            <label className="setup-label" style={{ marginTop: '1rem' }}>
+                Zorluk: <strong>{'⭐'.repeat(Math.min(difficulty, 5))}{difficulty > 5 ? '+' : ''} ({difficulty}/10)</strong>
+            </label>
+            <input
+                type="range" min={1} max={10} value={difficulty}
+                onChange={e => setDifficulty(Number(e.target.value))}
+                className="setup-slider"
+                id="slider-difficulty"
+            />
+
+            <button
+                className="btn btn-primary"
+                style={{ marginTop: '2rem', width: '100%' }}
+                onClick={() => onStart(gridSize, difficulty)}
+                id="btn-start-practice"
+            >
+                ▶ Oyna
+            </button>
+        </div>
+    );
 }
 
 export function GamePage() {
+    const location = useLocation();
+    const isPracticeRoute = location.pathname === '/practice';
+
     const status = useGameStore(s => s.status);
     const startPractice = useGameStore(s => s.startPractice);
+    const startDaily = useGameStore(s => s.startDaily);
     const board = useGameStore(s => s.board);
-    const solvedCountRef = useRef(0);
 
-    // Sayfa açılınca otomatik puzzle başlat (sadece board yoksa ve idle isek)
+    // /play → günlük bulmaca, /practice → kullanıcı seçene kadar bekle
     useEffect(() => {
-        // Eğer zaten bir puzzle varsa (örneğin CampaignPage'den navigate ile geldiysek) hiçbir şey yapma.
-        if (status === 'idle' && !board) {
-            const { gridSize, difficulty } = getProgressiveConfig(solvedCountRef.current);
-            startPractice(gridSize, difficulty);
+        if (!board && status === 'idle') {
+            if (!isPracticeRoute) {
+                startDaily();
+            }
         }
-    }, [status, board, startPractice]);
+    }, [board, status, isPracticeRoute, startDaily]);
 
-    // Puzzle çözüldüğünde sonraki seviyeye geç
-    useEffect(() => {
-        if (status === 'solved') {
-            solvedCountRef.current += 1;
-        }
-    }, [status]);
+    // Pratik modunda board yoksa seçim paneli göster
+    if (isPracticeRoute && !board) {
+        return (
+            <div className="game-page" id="game-page">
+                <div className="game-area">
+                    <PracticeSetup onStart={startPractice} />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="game-page" id="game-page">
             <div className="game-area">
                 <GameBoard />
             </div>
+            <WinModal />
         </div>
     );
 }
+
