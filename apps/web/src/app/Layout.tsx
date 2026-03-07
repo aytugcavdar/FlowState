@@ -48,10 +48,10 @@ export function Layout() {
     const renderNav = (className: string, id: string, items: typeof desktopNavItems) => (
         <nav className={`nav ${className}`} id={id}>
             {items.map(item => (
-                <a key={item.path} href={`#${item.path}`} className={`nav-link ${isActive(item.path) ? 'active' : ''}`} id={item.id}>
+                <Link key={item.path} to={item.path} className={`nav-link ${isActive(item.path) ? 'active' : ''}`} id={item.id}>
                     <span className="nav-icon">{item.icon}</span>
                     <span className="nav-text">{item.text}</span>
-                </a>
+                </Link>
             ))}
         </nav>
     );

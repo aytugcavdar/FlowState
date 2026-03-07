@@ -187,11 +187,11 @@ export function GameBoard() {
 
     const allTiles = board.getAllTiles();
 
-    // Calculate dynamic tile size
+    // Calculate dynamic tile size — boardPadding must match .game-board CSS padding
     const maxBoardWidth = Math.min(windowWidth - 32, 700);
     const gap = 4;
-    const boardPadding = 16; // 8px padding both sides * 2
-    const availableWidth = maxBoardWidth - boardPadding;
+    const boardPadding = windowWidth <= 480 ? 8 : 16; // matches GameBoard.css @media 480px rule
+    const availableWidth = maxBoardWidth - boardPadding * 2;
     const calculatedTileSize = Math.floor((availableWidth - (gridSize - 1) * gap) / gridSize);
     const tileSize = Math.max(26, Math.min(90, calculatedTileSize));
 
@@ -289,6 +289,7 @@ export function GameBoard() {
                     gridSize={gridSize}
                     tileSize={tileSize}
                     gap={gap}
+                    boardPadding={boardPadding}
                 />
             </div>
 

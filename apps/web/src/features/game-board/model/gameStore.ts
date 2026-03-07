@@ -145,9 +145,8 @@ export const useGameStore = create<GameState>()(
       startDaily: () => {
         const seed = getTodaysSeed();
         const rng = mulberry32(seed);
-        // Seeded bir LevelGenerator yapamadığımız için,
-        // seed'den türetilmiş sabit gridSize/difficulty kullanıyoruz.
-        const gridSize = 6 + (seed % 3); // 6, 7 ya da 8
+        // Minimum 7×7 günlük bulmaca — hiçbir zaman çok kolay olmayacak
+        const gridSize = 7 + (seed % 2); // 7 ya da 8
         const difficulty = 4 + Math.floor(rng() * 4); // 4-7 arası
         const generator = new LevelGenerator();
         const definition = generator.generate({ gridSize, difficulty, maxAttempts: 500 });

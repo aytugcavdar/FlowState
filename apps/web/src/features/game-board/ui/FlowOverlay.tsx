@@ -11,6 +11,7 @@ interface FlowOverlayProps {
     gridSize: number;
     tileSize: number;
     gap: number;
+    boardPadding?: number;
 }
 
 /** Akış rengine göre CSS renk değeri */
@@ -35,9 +36,9 @@ function flowColorToGlow(color: string): string {
     }
 }
 
-export function FlowOverlay({ flowPaths, gridSize, tileSize, gap }: FlowOverlayProps) {
+export function FlowOverlay({ flowPaths, gridSize, tileSize, gap, boardPadding = 16 }: FlowOverlayProps) {
     /** Toplam boyut hesapla */
-    const totalSize = gridSize * tileSize + (gridSize - 1) * gap + 32; // +32 padding
+    const totalSize = gridSize * tileSize + (gridSize - 1) * gap + boardPadding * 2;
 
     /** Akış yollarını SVG path'e çevir */
     const paths = useMemo(() => {
@@ -47,12 +48,12 @@ export function FlowOverlay({ flowPaths, gridSize, tileSize, gap }: FlowOverlayP
             // Kesin bağlantılar üzerinden (edges) ayrı dalları bağımsız çizgilerle çiz
             const pathStr = fp.edges.map(edge => {
                 const pt1 = {
-                    x: 16 + edge.from.col * (tileSize + gap) + tileSize / 2,
-                    y: 16 + edge.from.row * (tileSize + gap) + tileSize / 2,
+                    x: boardPadding + edge.from.col * (tileSize + gap) + tileSize / 2,
+                    y: boardPadding + edge.from.row * (tileSize + gap) + tileSize / 2,
                 };
                 const pt2 = {
-                    x: 16 + edge.to.col * (tileSize + gap) + tileSize / 2,
-                    y: 16 + edge.to.row * (tileSize + gap) + tileSize / 2,
+                    x: boardPadding + edge.to.col * (tileSize + gap) + tileSize / 2,
+                    y: boardPadding + edge.to.row * (tileSize + gap) + tileSize / 2,
                 };
                 return `M ${pt1.x} ${pt1.y} L ${pt2.x} ${pt2.y}`;
             }).join(' ');
