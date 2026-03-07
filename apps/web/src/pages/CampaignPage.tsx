@@ -54,7 +54,7 @@ export function CampaignPage() {
                     Burada basit CSS sinüs dalgası yaklaşımı kullanıyoruz. */}
                 <div className="saga-path">
                     {/* Render levels from 100 down to 1 so the start is at the bottom */}
-                    {[...CAMPAIGN_LEVELS].reverse().map((level, index) => {
+                    {[...CAMPAIGN_LEVELS].reverse().map((level) => {
                         const isUnlocked = level.id <= unlockedLevel;
                         const isCurrent = level.id === unlockedLevel;
                         const isLocked = level.id > unlockedLevel;
