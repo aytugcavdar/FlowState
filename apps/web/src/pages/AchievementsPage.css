@@ -1,0 +1,125 @@
+/* ============================================================
+   AchievementsPage Stilleri
+   Başarım kartları, kilit durumları, ödül gösterimi.
+   ============================================================ */
+
+.achievements-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    width: 100%;
+    max-width: 700px;
+    padding-top: 20px;
+}
+
+.achievements-header {
+    text-align: center;
+}
+
+.achievements-subtitle {
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ─── İlerleme Çubuğu ───────────────────────────────────────── */
+.achievement-progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(148, 163, 184, 0.12);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.achievement-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-cyan), var(--color-magenta));
+    border-radius: 4px;
+    transition: width 0.5s ease-out;
+}
+
+/* ─── Başarım Izgarası ───────────────────────────────────────── */
+.achievements-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+    width: 100%;
+}
+
+.achievement-card {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 16px 20px;
+    position: relative;
+    transition: all var(--transition-normal);
+}
+
+.achievement-card.unlocked {
+    border-color: rgba(34, 211, 238, 0.2);
+}
+
+.achievement-card.unlocked:hover {
+    transform: translateX(4px);
+    box-shadow: 0 0 12px var(--color-cyan-glow);
+}
+
+.achievement-card.locked {
+    opacity: 0.5;
+}
+
+.achievement-card.secret {
+    opacity: 0.35;
+    filter: blur(0.5px);
+}
+
+.achievement-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.achievement-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.achievement-name {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.achievement-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin: 2px 0 0;
+}
+
+.achievement-reward {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.reward-xp {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--color-cyan);
+}
+
+.reward-coins {
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: var(--color-yellow);
+}
+
+.achievement-check {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.7rem;
+}

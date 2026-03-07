@@ -1,0 +1,43 @@
+name: Test & Lint
+
+# Her PR ve main branch push'unda çalışır
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    name: Testler & Tip Kontrolü
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Kodu çek
+        uses: actions/checkout@v4
+
+      - name: pnpm kur
+        uses: pnpm/action-setup@v2
+        with:
+          version: 9
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Bağımlılıkları yükle
+        run: pnpm install --frozen-lockfile
+
+      - name: Tip kontrolü
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Game Engine testleri
+        run: pnpm --filter @flowstate/game-engine test
+
+      - name: Build kontrolü
+        run: pnpm build

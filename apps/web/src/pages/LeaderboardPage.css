@@ -1,0 +1,200 @@
+/* ============================================================
+   LeaderboardPage Stilleri
+   Liderlik tablosu, podyum, tablo.
+   ============================================================ */
+
+.leaderboard-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 28px;
+    width: 100%;
+    max-width: 600px;
+    padding-top: 20px;
+}
+
+.leaderboard-header {
+    text-align: center;
+}
+
+.leaderboard-subtitle {
+    margin-top: 6px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+/* ─── Tab Seçici ─────────────────────────────────────────────── */
+.leaderboard-tabs {
+    display: flex;
+    gap: 4px;
+    background: rgba(15, 22, 41, 0.4);
+    border-radius: var(--radius-md);
+    padding: 4px;
+}
+
+.tab-btn {
+    padding: 8px 20px;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.tab-btn.active {
+    color: var(--bg-primary);
+    background: linear-gradient(135deg, var(--color-cyan), #06b6d4);
+    box-shadow: 0 0 12px var(--color-cyan-glow);
+}
+
+/* ─── Podyum ─────────────────────────────────────────────────── */
+.podium {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+
+.podium-slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 16px 24px;
+    border-radius: var(--radius-md);
+    background: rgba(15, 22, 41, 0.5);
+    border: 1px solid var(--border-color);
+    transition: all var(--transition-normal);
+}
+
+.podium-slot:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow);
+}
+
+.podium-1 {
+    order: 2;
+    border-color: #facc15;
+    box-shadow: 0 0 20px rgba(250, 204, 21, 0.15);
+    padding: 20px 28px;
+}
+
+.podium-2 {
+    order: 1;
+    border-color: #94a3b8;
+}
+
+.podium-3 {
+    order: 3;
+    border-color: #cd7f32;
+}
+
+.podium-avatar {
+    font-size: 2rem;
+}
+
+.podium-name {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.podium-time {
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 900;
+    color: var(--color-cyan);
+}
+
+.podium-rank {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-muted);
+}
+
+/* ─── Liderlik Tablosu ───────────────────────────────────────── */
+.leaderboard-table {
+    width: 100%;
+    padding: 0;
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 60px 1fr 80px 80px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table-header span {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 80px 80px;
+    padding: 12px 20px;
+    align-items: center;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.06);
+    transition: background var(--transition-fast);
+}
+
+.table-row:hover {
+    background: rgba(34, 211, 238, 0.04);
+}
+
+.table-row.is-you {
+    background: rgba(34, 211, 238, 0.06);
+    border-left: 3px solid var(--color-cyan);
+}
+
+.td-rank {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.td-name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+}
+
+.td-avatar {
+    font-size: 1rem;
+}
+
+.you-badge {
+    font-family: var(--font-display);
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    padding: 2px 6px;
+    border-radius: 999px;
+    background: var(--color-cyan);
+    color: var(--bg-primary);
+}
+
+.td-time,
+.td-moves {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-align: center;
+}

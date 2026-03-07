@@ -1,0 +1,16 @@
+{
+    "name": "@flowstate/shared-types",
+    "version": "1.0.0",
+    "private": true,
+    "description": "FlowState paylaşılan TypeScript tipleri",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "tsc --build",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.0"
+    }
+}

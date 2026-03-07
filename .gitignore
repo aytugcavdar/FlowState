@@ -1,0 +1,31 @@
+# Bağımlılıklar
+node_modules/
+
+# Build çıktıları
+dist/
+.turbo/
+
+# Ortam değişkenleri (gizli)
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# İşletim sistemi
+.DS_Store
+Thumbs.db
+
+# Test
+coverage/
+
+# Supabase yerel
+supabase/.temp/
+
+# TypeScript build
+*.tsbuildinfo

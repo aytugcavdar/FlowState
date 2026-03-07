@@ -1,0 +1,23 @@
+{
+    "name": "@flowstate/game-engine",
+    "version": "1.0.0",
+    "private": true,
+    "description": "FlowState oyun motoru — saf TypeScript, sıfır bağımlılık",
+    "main": "./src/index.ts",
+    "types": "./src/index.ts",
+    "scripts": {
+        "build": "tsc --build",
+        "test": "vitest run",
+        "test:watch": "vitest",
+        "bench": "vitest bench",
+        "typecheck": "tsc --noEmit",
+        "clean": "rm -rf dist"
+    },
+    "dependencies": {
+        "@flowstate/shared-types": "workspace:*"
+    },
+    "devDependencies": {
+        "typescript": "^5.7.0",
+        "vitest": "^3.0.0"
+    }
+}

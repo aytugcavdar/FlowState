@@ -1,0 +1,270 @@
+/* ============================================================
+   Layout Stilleri
+   Üst gezinme çubuğu ve genel düzen.
+   ============================================================ */
+
+.layout {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* ─── Header ────────────────────────────────────────────────── */
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    padding: 12px 24px;
+    margin: 12px;
+    border-radius: var(--radius-lg);
+    position: sticky;
+    top: 12px;
+    z-index: 100;
+}
+
+/* ─── Logo ──────────────────────────────────────────────────── */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text-primary);
+}
+
+.logo-icon {
+    font-size: 1.4rem;
+}
+
+.logo-text {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    background: linear-gradient(135deg, var(--color-cyan), var(--color-magenta));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ─── Navigasyon ────────────────────────────────────────────── */
+.nav {
+    display: flex;
+    gap: 4px;
+}
+
+.mobile-nav {
+    display: none;
+    /* Mobilde açılacak */
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.nav-icon {
+    font-size: 1.1rem;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+    background: rgba(34, 211, 238, 0.1);
+}
+
+.nav-link.active {
+    color: var(--color-cyan);
+    background: rgba(34, 211, 238, 0.15);
+    border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+/* ─── İstatistik Çubuğu ─────────────────────────────────────── */
+.stats-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.stat-label {
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.coin-value {
+    color: var(--color-yellow);
+}
+
+.streak-value {
+    color: #f97316;
+}
+
+/* ─── XP Çubuğu ────────────────────────────────────────────── */
+.xp-stat {
+    min-width: 80px;
+}
+
+.xp-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(34, 211, 238, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.xp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-cyan), var(--color-magenta));
+    border-radius: 2px;
+    transition: width var(--transition-normal);
+}
+
+.stat-xp-text {
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+}
+
+/* ─── Ana İçerik ────────────────────────────────────────────── */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+}
+
+/* ─── Media Queries (Mobil Optimizasyon) ────────────────────── */
+@media (max-width: 768px) {
+    .layout {
+        padding-bottom: 70px;
+        /* Alttaki navigasyon için boşluk */
+    }
+
+    .header {
+        flex-direction: row;
+        gap: 8px;
+        padding: 10px 16px;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        margin: 0;
+        align-items: center;
+    }
+
+    .logo-text {
+        font-size: 0.9rem;
+    }
+
+    .logo-icon {
+        font-size: 1.2rem;
+    }
+
+    .desktop-nav {
+        display: none !important;
+    }
+
+    /* 🔥 Alttan açılan mobil navigasyon barı 🔥 */
+    .mobile-nav {
+        display: flex !important;
+    }
+
+    .nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-around;
+        align-items: center;
+        background: var(--bg-glass);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-top: 1px solid var(--border-color);
+        z-index: 1000;
+        padding: 8px 4px;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        border-radius: 20px 20px 0 0;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .nav-link {
+        flex: 1;
+        flex-direction: column;
+        justify-content: center;
+        padding: 6px 0;
+        font-size: 0.55rem;
+        gap: 4px;
+        background: transparent !important;
+        border: none !important;
+        letter-spacing: normal;
+    }
+
+    .nav-icon {
+        font-size: 1.3rem;
+        margin-bottom: 2px;
+        transition: transform var(--transition-fast);
+    }
+
+    .nav-link.active .nav-icon {
+        transform: scale(1.2) translateY(-2px);
+        filter: drop-shadow(0 0 8px var(--color-cyan));
+    }
+
+    .nav-link.active .nav-text {
+        color: var(--color-cyan);
+    }
+
+    .main-content {
+        padding: 12px;
+        justify-content: center;
+        /* Oyunu dikey eksende ekranın tam ortasına oturtur */
+    }
+
+    /* Mobilde istatistik barını küçült */
+    .stats-bar {
+        gap: 10px;
+        margin-left: auto;
+        /* Sağa yasla */
+    }
+
+    .stat-label {
+        display: none;
+        /* Yerden tasarruf için yazıları gizle */
+    }
+
+    .stat-value {
+        font-size: 0.85rem;
+    }
+
+    .xp-stat {
+        display: none;
+        /* Mobilde tepede XP barı çok yer kaplıyor, gizle */
+    }
+}

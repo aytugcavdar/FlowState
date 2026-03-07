@@ -1,0 +1,7 @@
+{
+    "framework": "vite",
+    "buildCommand": "pnpm turbo build --filter=@flowstate/web",
+    "outputDirectory": "apps/web/dist",
+    "installCommand": "pnpm install",
+    "devCommand": "pnpm turbo dev --filter=@flowstate/web"
+}
