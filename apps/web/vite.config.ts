@@ -5,7 +5,7 @@ import path from 'path';
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  base: '/FlowState/',
+  base: './',
   resolve: {
     alias: {
       // FSD yapısı için @ alias
