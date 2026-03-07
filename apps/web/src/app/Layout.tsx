@@ -32,7 +32,8 @@ export function Layout() {
         { path: '/practice', id: 'nav-practice', icon: '🎯', text: 'Pratik' },
         { path: '/campaign', id: 'nav-campaign', icon: '🗺️', text: 'Kampanya' },
         { path: '/leaderboard', id: 'nav-leaderboard', icon: '🏅', text: 'Sıralama' },
-        { path: '/achievements', id: 'nav-achievements', icon: '🏆', text: 'Başarımlar' }
+        { path: '/achievements', id: 'nav-achievements', icon: '🏆', text: 'Başarımlar' },
+        { path: '/stats', id: 'nav-stats', icon: '📊', text: 'İstatistik' }
     ];
 
     const renderNav = (className: string, id: string) => (

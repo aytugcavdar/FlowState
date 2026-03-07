@@ -122,6 +122,7 @@ export function GameBoard() {
 
     const { playRotate, playWin, playClick } = useSound();
     const [clickedTile, setClickedTile] = useState<ClickedTile | null>(null);
+    const [copyDone, setCopyDone] = useState(false);
     const prevSolved = useRef(false);
 
     // Dynamic grid size
@@ -393,6 +394,28 @@ export function GameBoard() {
                                     {currentPuzzleId?.startsWith('campaign-') ? '▶ Sonraki Bölüm' : '▶ Sonraki Bulmaca'}
                                 </button>
                             )}
+                            {/* Share Butonu */}
+                            <button
+                                className="btn"
+                                onClick={() => {
+                                    const mins = Math.floor(elapsedSeconds / 60);
+                                    const secs = elapsedSeconds % 60;
+                                    const timeStr = mins > 0 ? `${mins}d ${secs}s` : `${secs}s`;
+                                    const dateStr = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
+                                    const text = [
+                                        `⚡ FlowState — ${dateStr}`,
+                                        `⏱️ ${timeStr} · 🔄 ${moveCount} hamle · 📐 ${gridSize}×${gridSize}`,
+                                        `https://aytugcavdar.github.io/FlowState/`,
+                                    ].join('\n');
+                                    navigator.clipboard.writeText(text).then(() => {
+                                        setCopyDone(true);
+                                        setTimeout(() => setCopyDone(false), 2500);
+                                    });
+                                }}
+                                id="btn-share"
+                            >
+                                {copyDone ? '✅ Kopyalandı!' : '📤 Paylaş'}
+                            </button>
                             <button
                                 className="btn"
                                 onClick={() => {

@@ -13,6 +13,7 @@ import { CampaignPage } from '@/pages/CampaignPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AchievementsPage } from '@/pages/AchievementsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
+import { StatsPage } from '@/pages/StatsPage';
 
 export function App() {
     return (
@@ -26,6 +27,7 @@ export function App() {
                         <Route path="/campaign" element={<CampaignPage />} />
                         <Route path="/leaderboard" element={<LeaderboardPage />} />
                         <Route path="/achievements" element={<AchievementsPage />} />
+                        <Route path="/stats" element={<StatsPage />} />
                         <Route path="*" element={<NotFoundPage />} />
                     </Route>
                 </Routes>
