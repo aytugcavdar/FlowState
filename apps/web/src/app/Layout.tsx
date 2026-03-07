@@ -26,23 +26,32 @@ export function Layout() {
 
     const activeTheme = useThemeStore(s => s.activeTheme);
 
-    const navItems = [
+    const desktopNavItems = [
         { path: '/', id: 'nav-home', icon: '🏠', text: 'Ana Sayfa' },
         { path: '/play', id: 'nav-daily', icon: '📅', text: 'Günlük' },
         { path: '/practice', id: 'nav-practice', icon: '🎯', text: 'Pratik' },
         { path: '/campaign', id: 'nav-campaign', icon: '🗺️', text: 'Kampanya' },
         { path: '/leaderboard', id: 'nav-leaderboard', icon: '🏅', text: 'Sıralama' },
         { path: '/achievements', id: 'nav-achievements', icon: '🏆', text: 'Başarımlar' },
-        { path: '/stats', id: 'nav-stats', icon: '📊', text: 'İstatistik' }
+        { path: '/stats', id: 'nav-stats', icon: '📊', text: 'İstatistik' },
     ];
 
-    const renderNav = (className: string, id: string) => (
+    // Mobil alt barında yalnızca en sık kullanılan 5 öge
+    const mobileNavItems = [
+        { path: '/', id: 'mnav-home', icon: '🏠', text: 'Ana Sayfa' },
+        { path: '/play', id: 'mnav-daily', icon: '📅', text: 'Günlük' },
+        { path: '/practice', id: 'mnav-practice', icon: '🎯', text: 'Pratik' },
+        { path: '/campaign', id: 'mnav-campaign', icon: '🗺️', text: 'Kampanya' },
+        { path: '/stats', id: 'mnav-stats', icon: '📊', text: 'İstatistik' },
+    ];
+
+    const renderNav = (className: string, id: string, items: typeof desktopNavItems) => (
         <nav className={`nav ${className}`} id={id}>
-            {navItems.map(item => (
-                <Link key={item.path} to={item.path} className={`nav-link ${isActive(item.path) ? 'active' : ''}`} id={item.id}>
+            {items.map(item => (
+                <a key={item.path} href={`#${item.path}`} className={`nav-link ${isActive(item.path) ? 'active' : ''}`} id={item.id}>
                     <span className="nav-icon">{item.icon}</span>
                     <span className="nav-text">{item.text}</span>
-                </Link>
+                </a>
             ))}
         </nav>
     );
@@ -56,7 +65,7 @@ export function Layout() {
                     <span className="logo-text">FlowState</span>
                 </Link>
 
-                {renderNav('desktop-nav', 'main-nav-desktop')}
+                {renderNav('desktop-nav', 'main-nav-desktop', desktopNavItems)}
 
                 {/* ─── İlerleme Göstergeleri ─────────────────────────── */}
                 <div className="stats-bar" id="stats-bar">
@@ -90,7 +99,7 @@ export function Layout() {
             </main>
 
             {/* ─── Mobil Alt Navigasyon (Ayrık Element) ──────────────── */}
-            {renderNav('mobile-nav glass-panel', 'main-nav-mobile')}
+            {renderNav('mobile-nav glass-panel', 'main-nav-mobile', mobileNavItems)}
         </div>
     );
 }

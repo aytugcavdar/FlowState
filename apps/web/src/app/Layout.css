@@ -163,17 +163,18 @@
 /* ─── Media Queries (Mobil Optimizasyon) ────────────────────── */
 @media (max-width: 768px) {
     .layout {
-        padding-bottom: 70px;
-        /* Alttaki navigasyon için boşluk */
+        padding-bottom: 75px;
+        /* Alt nav için boşluk */
     }
 
     .header {
         flex-direction: row;
         gap: 8px;
-        padding: 10px 16px;
+        padding: 8px 12px;
         border-radius: 0 0 var(--radius-md) var(--radius-md);
         margin: 0;
         align-items: center;
+        top: 0;
     }
 
     .logo-text {
@@ -208,8 +209,8 @@
         -webkit-backdrop-filter: blur(20px);
         border-top: 1px solid var(--border-color);
         z-index: 1000;
-        padding: 8px 4px;
-        padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+        padding: 6px 4px;
+        padding-bottom: calc(6px + env(safe-area-inset-bottom, 0px));
         border-radius: 20px 20px 0 0;
         box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.4);
     }
@@ -218,18 +219,33 @@
         flex: 1;
         flex-direction: column;
         justify-content: center;
-        padding: 6px 0;
-        font-size: 0.55rem;
-        gap: 4px;
+        align-items: center;
+        padding: 6px 2px;
+        font-size: 0.5rem;
+        gap: 3px;
         background: transparent !important;
         border: none !important;
         letter-spacing: normal;
+        min-width: 0;
+        text-align: center;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
     }
 
     .nav-icon {
-        font-size: 1.3rem;
-        margin-bottom: 2px;
+        font-size: 1.4rem;
+        margin-bottom: 1px;
         transition: transform var(--transition-fast);
+        display: block;
+    }
+
+    .nav-text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+        font-size: 0.48rem;
+        display: block;
     }
 
     .nav-link.active .nav-icon {
@@ -242,29 +258,35 @@
     }
 
     .main-content {
-        padding: 12px;
-        justify-content: center;
-        /* Oyunu dikey eksende ekranın tam ortasına oturtur */
+        padding: 10px;
     }
 
     /* Mobilde istatistik barını küçült */
     .stats-bar {
-        gap: 10px;
+        gap: 8px;
         margin-left: auto;
-        /* Sağa yasla */
     }
 
     .stat-label {
         display: none;
-        /* Yerden tasarruf için yazıları gizle */
     }
 
     .stat-value {
-        font-size: 0.85rem;
+        font-size: 0.8rem;
     }
 
     .xp-stat {
         display: none;
-        /* Mobilde tepede XP barı çok yer kaplıyor, gizle */
+    }
+}
+
+@media (max-width: 380px) {
+    .nav-text {
+        display: none;
+        /* Çok küçük telefonda sadece emoji göster */
+    }
+
+    .nav-icon {
+        font-size: 1.5rem;
     }
 }
