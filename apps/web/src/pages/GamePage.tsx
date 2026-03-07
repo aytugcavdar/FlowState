@@ -6,7 +6,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GameBoard, useGameStore } from '@/features/game-board';
-import { WinModal } from '@/features/game-board/ui/WinModal';
 import './GamePage.css';
 
 /** Pratik modu seçim paneli */
@@ -85,7 +84,6 @@ export function GamePage() {
             <div className="game-area">
                 <GameBoard />
             </div>
-            <WinModal />
         </div>
     );
 }

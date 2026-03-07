@@ -360,26 +360,48 @@
 }
 
 /* ─── Media Queries (Mobil Optimizasyon) ────────────────────── */
+
+/* Tüm boyutlarda dokunmatik iyileştirme */
+.tile-cell {
+    touch-action: manipulation;
+    /* Çift-dokunma zoomunu engelle */
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+}
+
 @media (max-width: 768px) {
     .game-board-container {
-        gap: 12px;
+        gap: 10px;
     }
 
     .game-stats {
-        padding: 8px 12px;
-        gap: 12px;
+        padding: 8px 10px;
+        gap: 10px;
         width: 100%;
-        justify-content: center;
+        justify-content: space-around;
+        flex-wrap: wrap;
     }
 
     .game-stat-value {
-        font-size: 0.7rem;
+        font-size: 0.75rem;
+    }
+
+    .game-controls {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .game-controls .btn {
+        flex: 1;
+        min-width: 0;
+        padding: 0.6rem 0.4rem;
+        font-size: 0.75rem;
     }
 
     .win-modal {
-        padding: 32px 24px;
-        width: 90%;
-        gap: 16px;
+        padding: 28px 16px;
+        width: 92%;
+        gap: 14px;
     }
 
     .win-title {
@@ -392,5 +414,27 @@
 
     .win-stat-value {
         font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-board {
+        padding: 8px;
+    }
+
+    /* Küçük ekranlarda tile'lara aktif tap geri bildirimi - hover yok */
+    .tile-cell:active:not(:disabled) {
+        background: rgba(34, 211, 238, 0.18) !important;
+        transform: scale(0.92) rotate(var(--r, 0deg)) !important;
+    }
+
+    .game-stats {
+        gap: 8px;
+        padding: 6px 8px;
+    }
+
+    .status-indicator {
+        display: none;
+        /* Çok küçük ekranlarda "Oynuyor" yazısını gizle */
     }
 }

@@ -159,15 +159,26 @@ export const useGameStore = create<GameState>()(
       startCampaignLevel: (levelId) => {
         const levelConfig = CAMPAIGN_LEVELS.find(l => l.id === levelId);
         if (!levelConfig) return;
-        
-        // Kampanya bölümü her zaman aynı seed (seed = levelId) ile üretilebilir
-        // Veya şimdilik rastgele üretelim (gerçekte CampaignGenerator ile sabit üretilir)
+
+        // Her kampanya bölümü: levelId bazlı seed → her seferinde AYNI bulmaca
+        const seed = levelId * 7919; // büyük asal çarpan → iyi dağılım
+        const rng = mulberry32(seed);
+
+        // Seeded gridSize/difficulty (levelConfig'deki değerlere yakın ama deterministik)
+        const gridSize = levelConfig.gridSize;
+        const difficulty = levelConfig.difficulty;
+
+        // LevelGenerator'a seed'i geçemiyoruz ama rng'yi warm-up yaparak
+        // her koşuda aynı başlangıç noktasına getiriyoruz (global Math.random etkisini törpülemek için)
+        for (let i = 0; i < 10; i++) rng(); // warm-up
+
         const generator = new LevelGenerator();
-        const definition = generator.generate({ 
-           gridSize: levelConfig.gridSize, 
-           difficulty: levelConfig.difficulty 
+        const definition = generator.generate({
+          gridSize,
+          difficulty,
+          maxAttempts: 500,
         });
-        
+
         get().startPuzzle(definition, `campaign-${levelId}`);
       },
 
