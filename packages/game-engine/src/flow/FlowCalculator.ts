@@ -175,9 +175,15 @@ export class FlowCalculator {
     }
 
     for (const [color, edges] of colorGroups.entries()) {
+        const uniquePositions = new Map<string, Position>();
+        for (const edge of edges) {
+           uniquePositions.set(`${edge.from.row},${edge.from.col}`, edge.from);
+           uniquePositions.set(`${edge.to.row},${edge.to.col}`, edge.to);
+        }
+
         flowPaths.push({
            color,
-           positions: [], // Geriye dönük uyumluluk için, artık çok kullanılmıyor
+           positions: Array.from(uniquePositions.values()),
            edges
         });
     }

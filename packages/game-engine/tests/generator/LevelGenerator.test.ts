@@ -46,7 +46,8 @@ describe('LevelGenerator', () => {
     it('çözülebilir puzzle üretmeli', () => {
       // Not: Üretilen puzzle karıştırılmış halde,
       // ama doğru rotasyonlara çevrildiğinde çözülebilir olmalı
-      const definition = LevelGenerator.generatePathFirst({
+      const generator = new LevelGenerator();
+      const definition = generator.generate({
         gridSize: 4,
         difficulty: 2,
         maxAttempts: 50,
@@ -58,7 +59,8 @@ describe('LevelGenerator', () => {
     });
 
     it('kaynak ve hedef tile\'ları kilitli olmalı', () => {
-      const definition = LevelGenerator.generatePathFirst({
+      const generator = new LevelGenerator();
+      const definition = generator.generate({
         gridSize: 5,
         difficulty: 3,
       });
