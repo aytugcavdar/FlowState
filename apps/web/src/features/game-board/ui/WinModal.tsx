@@ -10,7 +10,7 @@ export function WinModal() {
     const navigate = useNavigate();
     const location = useLocation();
     const { moveCount, elapsedSeconds, solved, startPractice,
-        gridSize, startDaily, currentPuzzleId, reset } = useGameStore(s => ({
+        gridSize, startDaily, currentPuzzleId, reset, lastStars } = useGameStore(s => ({
             moveCount: s.moveCount,
             elapsedSeconds: s.elapsedSeconds,
             solved: s.solved,
@@ -19,6 +19,7 @@ export function WinModal() {
             startDaily: s.startDaily,
             currentPuzzleId: s.currentPuzzleId,
             reset: s.reset,
+            lastStars: s.lastStars,
         }));
 
     if (!solved) return null;
@@ -54,6 +55,19 @@ export function WinModal() {
                 <div className="win-confetti-emoji">🎉</div>
                 <h1 className="win-title">Tebrikler!</h1>
                 <p className="win-subtitle">Bulmacayı çözdün</p>
+
+                {/* ─── Star Rating ─── */}
+                <div className="win-stars" aria-label={`${lastStars} yıldız`}>
+                    {[1, 2, 3].map(n => (
+                        <span
+                            key={n}
+                            className={`win-star ${n <= lastStars ? 'earned' : 'empty'}`}
+                            style={{ animationDelay: `${n * 180}ms` }}
+                        >
+                            ⭐
+                        </span>
+                    ))}
+                </div>
 
                 <div className="win-stats">
                     <div className="win-stat">

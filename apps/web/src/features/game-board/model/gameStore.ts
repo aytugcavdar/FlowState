@@ -54,6 +54,7 @@ interface GameState {
   moveCount: number;
   elapsedSeconds: number;
   hintsUsedInPuzzle: number;
+  lastStars: 0 | 1 | 2 | 3;    // Son puzzle yıldızı
   undoStack: string[];         // Board serileştirilmiş halleri
   currentPuzzleId: string | null;
   
@@ -103,6 +104,7 @@ export const useGameStore = create<GameState>()(
       moveCount: 0,
       elapsedSeconds: 0,
       hintsUsedInPuzzle: 0,
+      lastStars: 0,
       undoStack: [],
       currentPuzzleId: null,
       isTutorial: false,
@@ -218,6 +220,7 @@ export const useGameStore = create<GameState>()(
           
           let newUnlockedLevel = state.unlockedLevel;
           let newCoins = state.coins;
+          let stars: 0 | 1 | 2 | 3 = 0; // Çözüm olmadıysa 0
 
           if (isNewlySolved) {
             newCoins += 50; // Standart odul
@@ -236,13 +239,21 @@ export const useGameStore = create<GameState>()(
                }
             }
 
+            // Yıldız hesapla (gridSize'a göre hedef süre)
+            const targetSeconds = state.gridSize * state.gridSize * 2.5;
+            const noHints = state.hintsUsedInPuzzle === 0;
+            const fastEnough = state.elapsedSeconds <= targetSeconds;
+            const veryFast = state.elapsedSeconds <= targetSeconds * 0.5;
+            stars = 1;
+            if (veryFast && noHints) stars = 3;
+            else if ((fastEnough && noHints) || veryFast) stars = 2;
             // Meta Store'a kaydet (Achievement)
             // setTimeout to avoid reacting inline if needed, but synchronous is fine
             setTimeout(() => {
                 useMetaStore.getState().recordSolve({
                     seconds: state.elapsedSeconds,
                     usedHints: state.hintsUsedInPuzzle > 0,
-                    isPerfect: false,
+                    isPerfect: stars === 3,
                     gridSize: state.gridSize,
                     campaignLevelId: campaignLvlId
                 });
@@ -258,7 +269,8 @@ export const useGameStore = create<GameState>()(
             moveCount: state.moveCount + 1,
             undoStack: [...state.undoStack.slice(-49), snapshot], // Max 50
             coins: newCoins,
-            unlockedLevel: newUnlockedLevel
+            unlockedLevel: newUnlockedLevel,
+            ...(isNewlySolved && { lastStars: stars }),
           };
         });
       },

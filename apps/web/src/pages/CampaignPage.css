@@ -1,6 +1,5 @@
 /* ============================================================
-   CampaignPage Stilleri (Saga Map)
-   Dikey kaydırılabilen 100 düğümlü yılan haritası.
+   CampaignPage — Yolculuk v3: 6 Tema Dünyası
    ============================================================ */
 
 .campaign-page {
@@ -8,209 +7,289 @@
     flex-direction: column;
     align-items: center;
     width: 100%;
-    height: 100%;
-    max-height: 100%;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
+    min-height: 100%;
+    padding-bottom: 80px;
+    overflow-y: auto;
 }
 
+/* ─── Header ─────────────────────────────────────────────── */
 .campaign-header {
     width: 100%;
-    max-width: 800px;
-    padding: 20px 32px;
+    max-width: 700px;
+    padding: 1.25rem 1.5rem;
     text-align: center;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    z-index: 10;
-    flex-shrink: 0;
+    margin: 1rem auto 0.5rem;
 }
 
 .campaign-subtitle {
-    margin-top: 8px;
-    color: var(--text-secondary);
-    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0.25rem 0 0.75rem;
 }
 
-.campaign-progress {
-    margin-top: 12px;
-    font-family: var(--font-display);
-    color: var(--color-cyan);
-    font-size: 1.1rem;
-    letter-spacing: 0.05em;
-}
-
-/* ─── Saga Map Container ────────────────────────────────────── */
-.saga-map-container {
-    flex: 1;
-    width: 100%;
-    max-width: 800px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    position: relative;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-cyan) transparent;
-    padding-bottom: 100px;
-    padding-top: 100px;
-}
-
-/* Custom Scrollbar for Webkit */
-.saga-map-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.saga-map-container::-webkit-scrollbar-thumb {
-    background-color: var(--color-cyan);
-    border-radius: 4px;
-}
-
-.saga-path {
+/* Global ilerleme barı */
+.campaign-global-progress {
     display: flex;
     flex-direction: column;
+    gap: 0.4rem;
     align-items: center;
-    gap: 80px;
-    /* Her node arası dikey boşluk */
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.progress-bar {
     width: 100%;
-    position: relative;
-    padding: 60px 0;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 999px;
+    overflow: hidden;
 }
 
-/* ─── Saga Node Wrapper ─────────────────────────────────────── */
-.saga-node-wrapper {
-    position: relative;
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-cyan), var(--color-magenta));
+    border-radius: 999px;
+    transition: width 0.6s ease;
+}
+
+/* ─── Dünyalar Listesi ───────────────────────────────────── */
+.worlds-list {
+    width: 100%;
+    max-width: 700px;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    width: 80px;
-    height: 80px;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 0 1rem 1rem;
 }
 
-/* ─── Bağlantı Çizgisi ──────────────────────────────────────── */
-.node-connector {
-    position: absolute;
-    top: -80px;
-    /* Üstteki node'a doğru çizgi */
-    left: 50%;
-    transform: translateX(-50%);
+.world-section {
+    border-radius: 1rem;
+    border: 1px solid var(--border-color);
+    background: var(--bg-glass);
+    backdrop-filter: blur(10px);
+    padding: 1rem 1.25rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+/* Tema renkleri */
+.world-section.cyan {
+    --world-color: #22d3ee;
+}
+
+.world-section.yellow {
+    --world-color: #facc15;
+}
+
+.world-section.blue {
+    --world-color: #60a5fa;
+}
+
+.world-section.green {
+    --world-color: #22c55e;
+}
+
+.world-section.magenta {
+    --world-color: #e879f9;
+}
+
+.world-section.white {
+    --world-color: #f1f5f9;
+}
+
+.world-section.world-active {
+    border-color: var(--world-color);
+    box-shadow: 0 0 16px color-mix(in srgb, var(--world-color) 25%, transparent);
+}
+
+.world-section.world-locked {
+    opacity: 0.5;
     pointer-events: none;
-    z-index: 0;
 }
 
-/* ─── Düğüm (Level Node) ────────────────────────────────────── */
-.level-node {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    border: 3px solid var(--border-color);
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+/* ─── Dünya Başlığı ─────────────────────────────────────── */
+.world-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.world-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+
+.world-info {
+    flex: 1;
+}
+
+.world-name {
     font-family: var(--font-display);
-    font-size: 1.2rem;
-    font-weight: 900;
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--world-color);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.world-badge {
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+}
+
+.world-badge.active {
+    background: color-mix(in srgb, var(--world-color) 20%, transparent);
+    color: var(--world-color);
+}
+
+.world-badge.locked {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-muted);
+}
+
+.world-desc {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-top: 0.15rem;
+}
+
+.world-fraction {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    color: var(--world-color);
+    flex-shrink: 0;
+}
+
+/* ─── Dünya İlerleme Barı ───────────────────────────────── */
+.world-progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.07);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.world-progress-fill {
+    height: 100%;
+    background: var(--world-color);
+    border-radius: 999px;
+    transition: width 0.5s ease;
+}
+
+/* ─── Bölüm Izgarası ────────────────────────────────────── */
+.level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+    gap: 0.5rem;
+}
+
+.level-node {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-secondary);
+    color: var(--text-muted);
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 2;
     position: relative;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.level-node .level-num {
+    display: block;
+    line-height: 1;
 }
 
 .level-node.unlocked {
-    border-color: var(--color-cyan);
-    background: rgba(34, 211, 238, 0.1);
-    color: var(--color-cyan);
+    border-color: color-mix(in srgb, var(--world-color) 50%, transparent);
+    background: color-mix(in srgb, var(--world-color) 10%, transparent);
+    color: var(--world-color);
 }
 
 .level-node.unlocked:hover {
-    transform: scale(1.15);
-    background: rgba(34, 211, 238, 0.2);
-    box-shadow: 0 0 20px var(--color-cyan-glow);
+    transform: scale(1.12);
+    background: color-mix(in srgb, var(--world-color) 20%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--world-color) 40%, transparent);
 }
 
 .level-node.locked {
-    background: rgba(10, 15, 25, 0.8);
-    color: var(--text-muted);
-    border-color: rgba(255, 255, 255, 0.1);
+    opacity: 0.4;
     cursor: not-allowed;
-    opacity: 0.6;
+    font-size: 1rem;
 }
 
 .level-node.current {
-    transform: scale(1.2);
+    transform: scale(1.15);
     border-color: var(--color-yellow);
     color: var(--color-yellow);
-    background: rgba(250, 204, 21, 0.15);
-    box-shadow: 0 0 25px rgba(250, 204, 21, 0.4);
-    animation: ripple 2s infinite;
+    background: rgba(250, 204, 21, 0.12);
+    box-shadow: 0 0 16px rgba(250, 204, 21, 0.35);
+    animation: level-ripple 1.8s infinite;
 }
 
-/* ─── Current Node Göstergesi ───────────────────────────────── */
-.current-indicator {
+.current-pulse {
     position: absolute;
-    top: -6px;
-    left: -6px;
-    right: -6px;
-    bottom: -6px;
-    border: 2px dashed var(--color-yellow);
-    border-radius: 50%;
-    animation: spin-slow 10s linear infinite;
+    inset: -4px;
+    border: 2px solid var(--color-yellow);
+    border-radius: 14px;
+    animation: pulse-ring 1.8s infinite;
     pointer-events: none;
 }
 
-@keyframes spin-slow {
-    0% {
-        transform: rotate(0deg);
-    }
+@keyframes level-ripple {
 
+    0%,
     100% {
-        transform: rotate(360deg);
-    }
-}
-
-@keyframes ripple {
-    0% {
-        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.4);
-    }
-
-    70% {
-        box-shadow: 0 0 0 15px rgba(250, 204, 21, 0);
-    }
-
-    100% {
-        box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
-    }
-}
-
-/* ─── Mekanik Tooltip ───────────────────────────────────────── */
-.mechanic-tooltip {
-    position: absolute;
-    left: 100%;
-    /* Sağa yerleştir */
-    margin-left: 20px;
-    padding: 6px 12px;
-    font-size: 0.75rem;
-    white-space: nowrap;
-    border-color: var(--color-magenta);
-    background: rgba(232, 121, 249, 0.05);
-    color: var(--color-magenta);
-    border-radius: 999px;
-    z-index: 5;
-    pointer-events: none;
-    animation: floating 3s ease-in-out infinite;
-}
-
-@keyframes floating {
-    0% {
-        transform: translateY(0);
+        box-shadow: 0 0 8px rgba(250, 204, 21, 0.3);
     }
 
     50% {
-        transform: translateY(-5px);
+        box-shadow: 0 0 20px rgba(250, 204, 21, 0.6);
+    }
+}
+
+@keyframes pulse-ring {
+    0% {
+        opacity: 1;
+        transform: scale(1);
     }
 
     100% {
-        transform: translateY(0);
+        opacity: 0;
+        transform: scale(1.4);
+    }
+}
+
+/* ─── Responsive ────────────────────────────────────────── */
+@media (max-width: 480px) {
+    .campaign-header {
+        margin: 0.5rem auto;
+        padding: 1rem;
+    }
+
+    .level-grid {
+        grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+        gap: 0.4rem;
+    }
+
+    .level-node {
+        width: 42px;
+        height: 42px;
+        font-size: 0.75rem;
     }
 }

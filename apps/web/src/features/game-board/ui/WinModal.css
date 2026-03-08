@@ -15,8 +15,13 @@
 }
 
 @keyframes win-overlay-in {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
 }
 
 .win-modal-card {
@@ -32,9 +37,19 @@
 }
 
 @keyframes pop-in {
-    0%   { transform: scale(0.7); opacity: 0; }
-    80%  { transform: scale(1.05); }
-    100% { transform: scale(1); opacity: 1; }
+    0% {
+        transform: scale(0.7);
+        opacity: 0;
+    }
+
+    80% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
 }
 
 .animate-pop {
@@ -63,7 +78,7 @@
     display: flex;
     align-items: center;
     gap: 1.5rem;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 1rem;
     padding: 1rem 1.5rem;
     width: 100%;
@@ -107,4 +122,41 @@
     width: 100%;
     padding: 0.85rem;
     font-size: 1rem;
+}
+
+/* ─── Star Rating ────────────────────────────────────────── */
+.win-stars {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    align-items: center;
+    margin: 0.25rem 0;
+}
+
+.win-star {
+    font-size: 2.5rem;
+    display: inline-block;
+    animation: starPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    line-height: 1;
+}
+
+.win-star.empty {
+    filter: grayscale(1) brightness(0.35);
+    animation: none;
+}
+
+@keyframes starPop {
+    0% {
+        opacity: 0;
+        transform: scale(0) rotate(-20deg);
+    }
+
+    70% {
+        transform: scale(1.25) rotate(8deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
 }
