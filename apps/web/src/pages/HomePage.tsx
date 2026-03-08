@@ -10,6 +10,45 @@ import { useGameStore } from '../features/game-board/model/gameStore';
 import { useMetaStore } from '../features/meta/model/metaStore';
 import './HomePage.css';
 
+/** Gece yarısına kalan süreyi hesaplar — her saniye güncellenir */
+function useDailyCountdown() {
+    const getRemaining = () => {
+        const now = new Date();
+        const midnight = new Date(now);
+        midnight.setHours(24, 0, 0, 0);
+        const diff = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
+        const h = Math.floor(diff / 3600);
+        const m = Math.floor((diff % 3600) / 60);
+        const s = diff % 60;
+        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    };
+    const [time, setTime] = useState(getRemaining);
+    useEffect(() => {
+        const id = setInterval(() => setTime(getRemaining()), 1000);
+        return () => clearInterval(id);
+    }, []);
+    return time;
+}
+
+/** Gerçek global günlük oyun sayacı — countapi.xyz ücretsiz servis */
+function usePlayCount() {
+    const [count, setCount] = useState<number | null>(null);
+
+    useEffect(() => {
+        const today = new Date().toISOString().slice(0, 10).replace(/-/g, ''); // '20260308'
+        const key = `flowstate-daily-${today}`;
+        const namespace = 'flowstate-game';
+
+        // Önce hit at (sayacı artır + değeri al)
+        fetch(`https://api.countapi.xyz/hit/${namespace}/${key}`)
+            .then(r => r.json())
+            .then(data => setCount(data.value ?? null))
+            .catch(() => setCount(null)); // Offline → gösterme
+    }, []);
+
+    return count;
+}
+
 /** PWA install prompt hook */
 function usePWAInstall() {
     const [prompt, setPrompt] = useState<Event | null>(null);
@@ -50,6 +89,8 @@ export function HomePage() {
     const navigate = useNavigate();
     const startTutorialLevel = useGameStore(s => s.startTutorialLevel);
     const { canInstall, install } = usePWAInstall();
+    const countdown = useDailyCountdown();
+    const playCount = usePlayCount();
 
     // Meta stats
     const stats = useMetaStore(s => s.stats);
@@ -140,10 +181,17 @@ export function HomePage() {
                             {dailyCompleted && <span className="done-badge">✅ Tamamlandı</span>}
                         </h2>
                         <p className="mode-desc">
-                            Her gün değişen sabit puzzle. Herkes aynı bulmacayı çözer — liderlik tablosunda sıranı bul!
+                            Her gün değişen sabit puzzle. Herkes aynı bulmacayı çözer!
                         </p>
+                        <div className="daily-meta">
+                            {playCount !== null && (
+                                <span className="daily-meta-item">👥 {playCount.toLocaleString('tr-TR')} oynadı</span>
+                            )}
+                            {playCount !== null && <span className="daily-meta-sep">·</span>}
+                            <span className="daily-meta-item">⏰ {countdown}</span>
+                        </div>
                     </div>
-                    <span className="badge">Bugün</span>
+                    <span className="badge">{dailyCompleted ? 'Bitti' : 'Oyna'}</span>
                 </Link>
 
                 <div className="mode-row">
@@ -167,7 +215,7 @@ export function HomePage() {
 
                     <Link to="/campaign" className="mode-card glass-panel" id="card-campaign">
                         <div className="mode-icon">🗺️</div>
-                        <h2 className="mode-title">Kampanya</h2>
+                        <h2 className="mode-title">Yolculuk</h2>
                         <p className="mode-desc">100 bölümlük yolculuk</p>
                         <span className="badge">
                             Sv {stats.highestCampaignLevel}/100

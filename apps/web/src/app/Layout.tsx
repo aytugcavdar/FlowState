@@ -30,7 +30,7 @@ export function Layout() {
         { path: '/', id: 'nav-home', icon: '🏠', text: 'Ana Sayfa' },
         { path: '/play', id: 'nav-daily', icon: '📅', text: 'Günlük' },
         { path: '/practice', id: 'nav-practice', icon: '🎯', text: 'Pratik' },
-        { path: '/campaign', id: 'nav-campaign', icon: '🗺️', text: 'Kampanya' },
+        { path: '/campaign', id: 'nav-campaign', icon: '🗺️', text: 'Yolculuk' },
         { path: '/leaderboard', id: 'nav-leaderboard', icon: '🏅', text: 'Sıralama' },
         { path: '/achievements', id: 'nav-achievements', icon: '🏆', text: 'Başarımlar' },
         { path: '/stats', id: 'nav-stats', icon: '📊', text: 'İstatistik' },
@@ -41,7 +41,7 @@ export function Layout() {
         { path: '/', id: 'mnav-home', icon: '🏠', text: 'Ana Sayfa' },
         { path: '/play', id: 'mnav-daily', icon: '📅', text: 'Günlük' },
         { path: '/practice', id: 'mnav-practice', icon: '🎯', text: 'Pratik' },
-        { path: '/campaign', id: 'mnav-campaign', icon: '🗺️', text: 'Kampanya' },
+        { path: '/campaign', id: 'mnav-campaign', icon: '🗺️', text: 'Yolculuk' },
         { path: '/stats', id: 'mnav-stats', icon: '📊', text: 'İstatistik' },
     ];
 

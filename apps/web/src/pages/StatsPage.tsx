@@ -108,7 +108,7 @@ export function StatsPage() {
                 />
                 <StatCard
                     icon="📗"
-                    label="Kampanya İlerlemesi"
+                    label="Yolculuk İlerlemesi"
                     value={`Seviye ${stats.highestCampaignLevel}`}
                     sub="en yüksek ulaşılan"
                 />

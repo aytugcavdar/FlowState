@@ -40,7 +40,7 @@ export function CampaignPage() {
     return (
         <div className="campaign-page animate-fade-in" id="campaign-page">
             <div className="campaign-header glass-panel">
-                <h1>🗺️ Kampanya (Saga Map)</h1>
+                <h1>🗺️ Yolculuk</h1>
                 <p className="campaign-subtitle">
                     100 bölüm. Kaydırarak ilerlemeni gör ve oynamak için bir bölüme tıkla.
                 </p>

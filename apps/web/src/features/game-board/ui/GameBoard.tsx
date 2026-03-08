@@ -9,6 +9,7 @@ import { useThemeStore } from '../model/themeStore';
 import { TileIcon } from '@/entities/tile/ui/TileIcon';
 import { FlowOverlay } from './FlowOverlay';
 import { useSound } from '@/shared/hooks/useSound';
+import { useHaptic } from '@/shared/hooks/useHaptic';
 import { TUTORIAL_LEVELS } from '@flowstate/game-engine';
 import './GameBoard.css';
 
@@ -121,6 +122,7 @@ export function GameBoard() {
     const activeTheme = useThemeStore((s) => s.activeTheme);
 
     const { playRotate, playWin, playClick } = useSound();
+    const haptic = useHaptic();
     const [clickedTile, setClickedTile] = useState<ClickedTile | null>(null);
     const [copyDone, setCopyDone] = useState(false);
     const prevSolved = useRef(false);
@@ -144,18 +146,19 @@ export function GameBoard() {
     useEffect(() => {
         if (solved && !prevSolved.current) {
             playWin();
+            haptic.win();
         }
         prevSolved.current = solved;
-    }, [solved, playWin]);
+    }, [solved, playWin, haptic]);
 
     /** Tile tıklama */
     const handleTileClick = useCallback((row: number, col: number) => {
         playRotate();
+        haptic.tapTile();
         setClickedTile({ row, col, timestamp: Date.now() });
         rotateTile(row, col);
-        // Animasyonu temizle
         setTimeout(() => setClickedTile(null), 300);
-    }, [rotateTile, playRotate]);
+    }, [rotateTile, playRotate, haptic]);
 
     if (!board) {
         return (

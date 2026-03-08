@@ -209,6 +209,26 @@
     vertical-align: middle;
 }
 
+/* Günlük kart alt meta satırı */
+.daily-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.daily-meta-item {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+}
+
+.daily-meta-sep {
+    color: var(--border-color);
+    font-size: 0.7rem;
+}
+
 /* Alt 3 küçük kart yan yana */
 .mode-row {
     display: grid;
