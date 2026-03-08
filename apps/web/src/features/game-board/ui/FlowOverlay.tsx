@@ -12,6 +12,7 @@ interface FlowOverlayProps {
     tileSize: number;
     gap: number;
     boardPadding?: number;
+    isSolved?: boolean;
 }
 
 /** Akış rengine göre CSS renk değeri */
@@ -21,6 +22,9 @@ function flowColorToCSS(color: string): string {
         case 'magenta': return '#e879f9';
         case 'yellow': return '#facc15';
         case 'white': return '#f1f5f9';
+        case 'purple': return '#a855f7';
+        case 'green': return '#22c55e';
+        case 'orange': return '#f97316';
         default: return '#94a3b8';
     }
 }
@@ -32,6 +36,9 @@ function flowColorToGlow(color: string): string {
         case 'magenta': return '0 0 8px rgba(232,121,249,0.6)';
         case 'yellow': return '0 0 8px rgba(250,204,21,0.6)';
         case 'white': return '0 0 8px rgba(241,245,249,0.6)';
+        case 'purple': return '0 0 8px rgba(168,85,247,0.6)';
+        case 'green': return '0 0 8px rgba(34,197,94,0.6)';
+        case 'orange': return '0 0 8px rgba(249,115,22,0.6)';
         default: return 'none';
     }
 }
@@ -103,7 +110,7 @@ export function FlowOverlay({ flowPaths, gridSize, tileSize, gap, boardPadding =
                 </g>
             );
         }).filter(Boolean);
-    }, [flowPaths, tileSize, gap]);
+    }, [flowPaths, tileSize, gap, boardPadding]);
 
     if (paths.length === 0) return null;
 

@@ -8,6 +8,7 @@ import { Outlet, Link, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import type { RootState } from './store';
 import { useThemeStore } from '../features/game-board/model/themeStore';
+import { AchievementToast } from '../shared/ui/AchievementToast';
 import './Layout.css';
 import './themes.css';
 
@@ -98,7 +99,10 @@ export function Layout() {
                 <Outlet />
             </main>
 
-            {/* ─── Mobil Alt Navigasyon (Ayrık Element) ──────────────── */}
+            {/* ─── Başarım Toast ───────────────────────────────────── */}
+            <AchievementToast />
+
+            {/* ─── Mobil Alt Navigasyon ────────────────────────────── */}
             {renderNav('mobile-nav glass-panel', 'main-nav-mobile', mobileNavItems)}
         </div>
     );

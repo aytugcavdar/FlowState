@@ -167,7 +167,7 @@ export function HomePage() {
             )}
 
             {/* ─── Mod Kartları ─────────────────────────────────── */}
-            <section className="mode-cards" id="mode-cards">
+            <section className="mode-cards stagger-children" id="mode-cards">
                 {/* Günlük Bulmaca — Öne Çıkarılmış */}
                 <Link
                     to="/play"
