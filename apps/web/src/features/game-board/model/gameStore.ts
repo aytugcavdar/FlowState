@@ -31,10 +31,10 @@ function mulberry32(seed: number) {
   };
 }
 
-/** Bugünün tarihinden deterministik bir sayı üretir */
+/** Bugünün tarihinden deterministik (herkes için aynı) bir sayı üretir */
 function getTodaysSeed(): number {
-  const now = new Date();
-  const dateStr = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+  // Bütün dünyada eşzamanlı değişmesi için UTC kullan (ISO string)
+  const dateStr = new Date().toISOString().slice(0, 10);
   let hash = 0;
   for (let i = 0; i < dateStr.length; i++) {
     hash = (Math.imul(31, hash) + dateStr.charCodeAt(i)) | 0;
@@ -154,7 +154,17 @@ export const useGameStore = create<GameState>()(
         const gridSize = 7 + (seed % 2); // 7 ya da 8
         const difficulty = 4 + Math.floor(rng() * 4); // 4-7 arası
         const generator = new LevelGenerator();
-        const definition = generator.generate({ gridSize, difficulty, maxAttempts: 500 });
+
+        // Deterministik üretim için Math.random'u geçici olarak eziyoruz (JS single-thread olduğu için güvenli)
+        const originalRandom = Math.random;
+        Math.random = rng;
+        let definition;
+        try {
+            definition = generator.generate({ gridSize, difficulty, maxAttempts: 500 });
+        } finally {
+            Math.random = originalRandom;
+        }
+
         const todayKey = `daily-${new Date().toISOString().slice(0, 10)}`;
         get().startPuzzle(definition, todayKey, difficulty);
       },
