@@ -213,6 +213,13 @@ export function HomePage() {
                         <span className="badge">Sınırsız</span>
                     </Link>
 
+                    <Link to="/timeattack" className="mode-card glass-panel" id="card-timeattack" style={{ borderColor: 'rgba(232,121,249,0.3)' }}>
+                        <div className="mode-icon">⚡</div>
+                        <h2 className="mode-title" style={{ color: 'var(--color-magenta)' }}>Hız Modu</h2>
+                        <p className="mode-desc">120 saniyede kaç tane?</p>
+                        <span className="badge" style={{ borderColor: 'var(--color-magenta)', color: 'var(--color-magenta)' }}>Yeni</span>
+                    </Link>
+
                     <Link to="/campaign" className="mode-card glass-panel" id="card-campaign">
                         <div className="mode-icon">🗺️</div>
                         <h2 className="mode-title">Yolculuk</h2>

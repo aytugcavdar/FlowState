@@ -57,14 +57,15 @@ interface GameState {
   lastStars: 0 | 1 | 2 | 3;    // Son puzzle yıldızı
   undoStack: string[];         // Board serileştirilmiş halleri
   currentPuzzleId: string | null;
-  
+  currentDifficulty: number | null; // Skor/Etiket için zorluk numarası
+
   // ─── Tutorial ───────────────────────────────────────────
   isTutorial: boolean;
   tutorialStep: number | null;
 
   // ─── Eylemler ───────────────────────────────────────────
   /** Yeni bir puzzle başlat */
-  startPuzzle: (definition: PuzzleDefinition, puzzleId?: string) => void;
+  startPuzzle: (definition: PuzzleDefinition, puzzleId?: string, difficulty?: number) => void;
   /** Rastgele pratik puzzle üret */
   startPractice: (gridSize: number, difficulty: number) => void;
   /** Bugünün sabit günlük bulmacasını başlat */
@@ -107,6 +108,7 @@ export const useGameStore = create<GameState>()(
       lastStars: 0,
       undoStack: [],
       currentPuzzleId: null,
+      currentDifficulty: null,
       isTutorial: false,
       tutorialStep: null,
       coins: 100, // Baslangic hediyesi veya localStorage'dan yuklenebilir
@@ -114,7 +116,7 @@ export const useGameStore = create<GameState>()(
       unlockedLevel: 1, // Baslangicta kilidi acik seviye
 
       // ─── Puzzle Başlat ────────────────────────────────────
-      startPuzzle: (definition, puzzleId) => {
+      startPuzzle: (definition, puzzleId, difficulty) => {
         const board = Board.fromDefinition(definition);
         const flowResult = FlowCalculator.calculate(board);
         const validation = FlowValidator.checkWin(board, flowResult);
@@ -131,6 +133,7 @@ export const useGameStore = create<GameState>()(
           hintsUsedInPuzzle: 0,
           undoStack: [],
           currentPuzzleId: puzzleId ?? null,
+          currentDifficulty: difficulty ?? null,
           isTutorial: false,     // Normal puzzle'da kapat
           tutorialStep: null,
         });
@@ -140,7 +143,7 @@ export const useGameStore = create<GameState>()(
       startPractice: (gridSize, difficulty) => {
         const generator = new LevelGenerator();
         const definition = generator.generate({ gridSize, difficulty });
-        get().startPuzzle(definition, `practice-${Date.now()}`);
+        get().startPuzzle(definition, `practice-${Date.now()}`, difficulty);
       },
 
       // ─── Günlük Bulmaca Başlat ──────────────────────────────
@@ -153,7 +156,7 @@ export const useGameStore = create<GameState>()(
         const generator = new LevelGenerator();
         const definition = generator.generate({ gridSize, difficulty, maxAttempts: 500 });
         const todayKey = `daily-${new Date().toISOString().slice(0, 10)}`;
-        get().startPuzzle(definition, todayKey);
+        get().startPuzzle(definition, todayKey, difficulty);
       },
 
       // ─── Kampanya Bölümü Başlat ─────────────────────────────
@@ -180,7 +183,7 @@ export const useGameStore = create<GameState>()(
           maxAttempts: 500,
         });
 
-        get().startPuzzle(definition, `campaign-${levelId}`);
+        get().startPuzzle(definition, `campaign-${levelId}`, difficulty);
       },
 
       // ─── Eğitim Bölümü Başlat ───────────────────────────────

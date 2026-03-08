@@ -31,6 +31,7 @@ export function Layout() {
         { path: '/', id: 'nav-home', icon: '🏠', text: 'Ana Sayfa' },
         { path: '/play', id: 'nav-daily', icon: '📅', text: 'Günlük' },
         { path: '/practice', id: 'nav-practice', icon: '🎯', text: 'Pratik' },
+        { path: '/timeattack', id: 'nav-timeattack', icon: '⚡', text: 'Hız Modu' },
         { path: '/campaign', id: 'nav-campaign', icon: '🗺️', text: 'Yolculuk' },
         { path: '/leaderboard', id: 'nav-leaderboard', icon: '🏅', text: 'Sıralama' },
         { path: '/achievements', id: 'nav-achievements', icon: '🏆', text: 'Başarımlar' },

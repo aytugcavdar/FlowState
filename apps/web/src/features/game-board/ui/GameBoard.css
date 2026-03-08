@@ -142,6 +142,26 @@
     }
 }
 
+/* ─── Seçim / Klavye Fokus ──────────────────────────────────── */
+.tile-cell.keyboard-selected {
+    box-shadow: inset 0 0 0 3px var(--color-yellow), 0 0 12px rgba(250, 204, 21, 0.4);
+    z-index: 10;
+    /* Glow üstte kalsın */
+    border-radius: 4px;
+    /* tile radius */
+    animation: pulse-keyboard-focus 1.5s infinite alternate;
+}
+
+@keyframes pulse-keyboard-focus {
+    from {
+        box-shadow: inset 0 0 0 3px var(--color-yellow), 0 0 12px rgba(250, 204, 21, 0.4);
+    }
+
+    to {
+        box-shadow: inset 0 0 0 3px var(--color-yellow), 0 0 20px rgba(250, 204, 21, 0.8);
+    }
+}
+
 /* ─── Tile Hücresi ──────────────────────────────────────────── */
 .tile-cell {
     width: var(--tile-size);

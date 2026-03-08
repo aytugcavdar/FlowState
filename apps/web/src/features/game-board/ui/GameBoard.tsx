@@ -13,6 +13,13 @@ import { useHaptic } from '@/shared/hooks/useHaptic';
 import { TUTORIAL_LEVELS } from '@flowstate/game-engine';
 import './GameBoard.css';
 
+const DIFF_LABEL: Record<number, string> = {
+    1: '⬜ Başlangıç', 2: '⬜ Başlangıç', 3: '🟩 Kolay',
+    4: '🟩 Kolay', 5: '🟨 Orta', 6: '🟨 Orta',
+    7: '🟧 Zor', 8: '🟧 Zor', 9: '🟥 Uzman',
+    10: '💀 Acımasız',
+};
+
 /** Döndürme animasyonu için son tıklanan pozisyon */
 interface ClickedTile {
     row: number;
@@ -30,6 +37,7 @@ const TileCell = memo(function TileCell({
     locked,
     isHinted,
     justClicked,
+    isKeyboardSelected,
     theme,
     onClick,
 }: {
@@ -41,6 +49,7 @@ const TileCell = memo(function TileCell({
     locked: boolean;
     isHinted: boolean;
     justClicked: boolean;
+    isKeyboardSelected: boolean;
     theme: string;
     onClick: () => void;
 }) {
@@ -65,7 +74,7 @@ const TileCell = memo(function TileCell({
 
     return (
         <button
-            className={`tile-cell ${locked ? 'locked' : ''} ${isHinted ? 'hinted' : ''} ${flowColor ? 'has-flow flow-' + flowColor : ''} ${justClicked ? 'just-clicked' : ''}`}
+            className={`tile-cell ${locked ? 'locked' : ''} ${isHinted ? 'hinted' : ''} ${flowColor ? 'has-flow flow-' + flowColor : ''} ${justClicked ? 'just-clicked' : ''} ${isKeyboardSelected ? 'keyboard-selected' : ''}`}
             onClick={onClick}
             disabled={locked}
             data-testid={`tile-${row}-${col}`}
@@ -93,6 +102,7 @@ const TileCell = memo(function TileCell({
     prev.locked === next.locked &&
     prev.isHinted === next.isHinted &&
     prev.justClicked === next.justClicked &&
+    prev.isKeyboardSelected === next.isKeyboardSelected &&
     prev.theme === next.theme
 );
 
@@ -118,14 +128,21 @@ export function GameBoard() {
     const unlockedLevel = useGameStore(s => s.unlockedLevel);
     const isTutorial = useGameStore(s => s.isTutorial);
     const tutorialStep = useGameStore(s => s.tutorialStep);
+    const currentDifficulty = useGameStore(s => s.currentDifficulty);
 
     const activeTheme = useThemeStore((s) => s.activeTheme);
 
     const { playRotate, playWin, playClick } = useSound();
     const haptic = useHaptic();
     const [clickedTile, setClickedTile] = useState<ClickedTile | null>(null);
+    const [keyboardCursor, setKeyboardCursor] = useState<{ row: number; col: number } | null>(null);
     const [copyDone, setCopyDone] = useState(false);
     const prevSolved = useRef(false);
+
+    // Klavye imlecini sıfırla oyuna başlarken
+    useEffect(() => {
+        setKeyboardCursor(null);
+    }, [currentPuzzleId]);
 
     // Dynamic grid size
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 700);
@@ -156,9 +173,51 @@ export function GameBoard() {
         playRotate();
         haptic.tapTile();
         setClickedTile({ row, col, timestamp: Date.now() });
+        setKeyboardCursor({ row, col });
         rotateTile(row, col);
         setTimeout(() => setClickedTile(null), 300);
     }, [rotateTile, playRotate, haptic]);
+
+    // ─── Klavye Kontrolleri ───
+    useEffect(() => {
+        if (status !== 'playing') return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            // Sadece ok tuşları, WASD, Space ve Enter için çalış
+            const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', ' ', 'Enter'];
+            if (!keys.includes(e.key)) return;
+
+            e.preventDefault(); // Ekran kaymasını vs. engelle
+
+            // Eğer henüz bir cursor yoksa, tam ortadan başlat
+            if (!keyboardCursor) {
+                const center = Math.floor(gridSize / 2);
+                setKeyboardCursor({ row: center, col: center });
+                return;
+            }
+
+            const { row, col } = keyboardCursor;
+
+            if (e.key === 'ArrowUp' || e.key === 'w') {
+                setKeyboardCursor({ row: Math.max(0, row - 1), col });
+            } else if (e.key === 'ArrowDown' || e.key === 's') {
+                setKeyboardCursor({ row: Math.min(gridSize - 1, row + 1), col });
+            } else if (e.key === 'ArrowLeft' || e.key === 'a') {
+                setKeyboardCursor({ row, col: Math.max(0, col - 1) });
+            } else if (e.key === 'ArrowRight' || e.key === 'd') {
+                setKeyboardCursor({ row, col: Math.min(gridSize - 1, col + 1) });
+            } else if (e.key === ' ' || e.key === 'Enter') {
+                // Tahtada tile'ı bul ve çevir
+                const tileData = allTiles.find(t => t.pos.row === row && t.pos.col === col)?.tile;
+                if (tileData && !tileData.locked) {
+                    handleTileClick(row, col);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [status, gridSize, keyboardCursor, handleTileClick, board]);
 
     if (!board) {
         return (
@@ -239,6 +298,13 @@ export function GameBoard() {
                                 status === 'idle' ? 'Bekliyor' : status}
                     </span>
                 </div>
+                {currentDifficulty && (
+                    <div className="game-stat" title="Zorluk">
+                        <span className="game-stat-value" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+                            {DIFF_LABEL[currentDifficulty] || `Zorluk: ${currentDifficulty}`}
+                        </span>
+                    </div>
+                )}
             </div>
 
             {/* ─── Eğitim Rehberi (Tutorial Overlay) ────────────────── */}
@@ -267,6 +333,7 @@ export function GameBoard() {
                         const flowInfo = flowResult?.tileFlows.get(`${pos.row},${pos.col}`);
                         const flowColor = flowInfo?.colors[0] ?? null;
                         const justClicked = clickedTile?.row === pos.row && clickedTile?.col === pos.col;
+                        const isKeyboardSelected = keyboardCursor?.row === pos.row && keyboardCursor?.col === pos.col;
 
                         return (
                             <TileCell
@@ -279,6 +346,7 @@ export function GameBoard() {
                                 locked={tile.locked}
                                 isHinted={tile.isHinted || false}
                                 justClicked={justClicked}
+                                isKeyboardSelected={isKeyboardSelected}
                                 theme={activeTheme}
                                 onClick={() => handleTileClick(pos.row, pos.col)}
                             />

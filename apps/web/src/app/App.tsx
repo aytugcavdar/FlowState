@@ -10,6 +10,7 @@ import { Layout } from './Layout';
 import { HomePage } from '@/pages/HomePage';
 import { GamePage } from '@/pages/GamePage';
 import { CampaignPage } from '@/pages/CampaignPage';
+import { TimeAttackPage } from '@/pages/TimeAttackPage';
 import { LeaderboardPage } from '@/pages/LeaderboardPage';
 import { AchievementsPage } from '@/pages/AchievementsPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
@@ -24,6 +25,7 @@ export function App() {
                         <Route path="/" element={<HomePage />} />
                         <Route path="/play" element={<GamePage />} />
                         <Route path="/practice" element={<GamePage />} />
+                        <Route path="/timeattack" element={<TimeAttackPage />} />
                         <Route path="/campaign" element={<CampaignPage />} />
                         <Route path="/leaderboard" element={<LeaderboardPage />} />
                         <Route path="/achievements" element={<AchievementsPage />} />
