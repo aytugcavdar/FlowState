@@ -58,6 +58,12 @@ export function GamePage() {
     const startPractice = useGameStore(s => s.startPractice);
     const startDaily = useGameStore(s => s.startDaily);
     const board = useGameStore(s => s.board);
+    const reset = useGameStore(s => s.reset);
+
+    // Rota değiştiğinde board'ı sıfırla (daily ↔ practice arası geçiş)
+    useEffect(() => {
+        reset();
+    }, [isPracticeRoute]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // /play → günlük bulmaca, /practice → kullanıcı seçene kadar bekle
     useEffect(() => {

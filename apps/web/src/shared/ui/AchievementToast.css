@@ -69,3 +69,29 @@
     white-space: nowrap;
     filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.5));
 }
+
+.toast-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0.7;
+}
+
+.toast-close:hover {
+    opacity: 1;
+    color: var(--text-primary);
+}
+
+/* Toast'ı tıklanabilir yap (mobil için) */
+.achievement-toast {
+    cursor: pointer;
+    position: relative;
+    /* close butonun mutlak konumu için */
+}

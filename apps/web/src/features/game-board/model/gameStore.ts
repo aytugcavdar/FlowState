@@ -290,12 +290,10 @@ export const useGameStore = create<GameState>()(
 
       // ─── İpucu Kullan ──────────────────────────────────────
       useHint: () => {
-        const { board, status, coins } = get();
+        const { board, status } = get();
         if (!board || status !== 'playing') return;
 
-        // Hint ucreti 25 coin olsun
-        const HINT_COST = 25;
-        if (coins < HINT_COST) return; // Yeterli coin yok
+        // İpucu artık üretsiz (günlük modda UI tarafından zaten engelleniyor)
 
         const { board: newBoard, applied } = board.applyHint();
         if (!applied) return; // Uygulanacak ipucu kalmadi
@@ -309,7 +307,6 @@ export const useGameStore = create<GameState>()(
           flowPaths: flowResult.flowPaths,
           solved: validation.solved,
           status: validation.solved ? 'solved' : state.status,
-          coins: state.coins - HINT_COST,
           hintsUsedInPuzzle: state.hintsUsedInPuzzle + 1,
         }));
       },

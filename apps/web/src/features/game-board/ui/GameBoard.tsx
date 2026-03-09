@@ -130,6 +130,8 @@ export function GameBoard() {
     const tutorialStep = useGameStore(s => s.tutorialStep);
     const currentDifficulty = useGameStore(s => s.currentDifficulty);
 
+    const isDaily = currentPuzzleId?.startsWith('daily-') ?? false;
+
     const activeTheme = useThemeStore((s) => s.activeTheme);
 
     const { playRotate, playWin, playClick } = useSound();
@@ -366,32 +368,40 @@ export function GameBoard() {
 
             {/* ─── Kontrol Butonları ─────────────────────────────── */}
             <div className="game-controls" id="game-controls">
-                <button
-                    className="btn hint-btn"
-                    onClick={() => { playClick(); useHint(); }}
-                    disabled={status !== 'playing' || coins < 25}
-                    title="25 Jeton Karşılığı İpucu Al"
-                >
-                    💡 İpucu (25💰)
-                </button>
-                <button
-                    className="btn"
-                    onClick={() => { playClick(); undoMove(); }}
-                    disabled={status !== 'playing'}
-                    id="btn-undo"
-                >
-                    ↩ Geri Al
-                </button>
-                <button
-                    className="btn"
-                    onClick={() => {
-                        playClick();
-                        startPractice(gridSize, 3);
-                    }}
-                    id="btn-new-puzzle"
-                >
-                    🔀 Yeni Bulmaca
-                </button>
+                {/* İpucu butonu — Günlük modda hiç gösterilmez */}
+                {!isDaily && (
+                    <button
+                        className="btn hint-btn"
+                        onClick={() => { playClick(); useHint(); }}
+                        disabled={status !== 'playing'}
+                        title="İpucu Al"
+                    >
+                        💡 İpucu
+                    </button>
+                )}
+                {/* Günlük modda geri al, ipucu ve yeni bulmaca yok */}
+                {!isDaily && (
+                    <>
+                        <button
+                            className="btn"
+                            onClick={() => { playClick(); undoMove(); }}
+                            disabled={status !== 'playing'}
+                            id="btn-undo"
+                        >
+                            ↩ Geri Al
+                        </button>
+                        <button
+                            className="btn"
+                            onClick={() => {
+                                playClick();
+                                startPractice(gridSize, 3);
+                            }}
+                            id="btn-new-puzzle"
+                        >
+                            🔀 Yeni Bulmaca
+                        </button>
+                    </>
+                )}
             </div>
 
             {/* ─── Kazanma Modalı ────────────────────────────────── */}

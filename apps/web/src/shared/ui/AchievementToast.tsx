@@ -49,19 +49,24 @@ export function AchievementToast() {
         setExiting(false);
         setVisible(next);
 
-        // 3.5 saniye sonra kapat
+        // 2.5 saniye sonra kapat
         const timer = setTimeout(() => {
             setExiting(true);
             setTimeout(() => setVisible(null), 400);
-        }, 3500);
+        }, 2500);
 
         return () => clearTimeout(timer);
     }, [queue, visible]);
 
+    const dismiss = () => {
+        setExiting(true);
+        setTimeout(() => setVisible(null), 400);
+    };
+
     if (!visible) return null;
 
     return (
-        <div className={`achievement-toast glass-panel ${exiting ? 'exiting' : ''}`} role="alert" id="achievement-toast">
+        <div className={`achievement-toast glass-panel ${exiting ? 'exiting' : ''}`} role="alert" id="achievement-toast" onClick={dismiss}>
             <div className="toast-icon animate-star">{visible.icon}</div>
             <div className="toast-body">
                 <div className="toast-title">🏆 Başarım Açıldı!</div>
@@ -69,6 +74,7 @@ export function AchievementToast() {
                 <div className="toast-desc">{visible.description}</div>
             </div>
             <div className="toast-xp">+{visible.xp} XP</div>
+            <button className="toast-close" aria-label="Kapat" onClick={dismiss}>×</button>
         </div>
     );
 }
