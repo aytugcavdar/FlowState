@@ -9,8 +9,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // Tüm statik asset'leri önbelleğe al
+      // Yeni SW anında devreye girsin — eski cache'i temizle
       workbox: {
+        skipWaiting: true,
+        clientsClaim: true,
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
         // Navigasyon fallback — HashRouter ile uyumlu
         navigateFallback: 'index.html',
