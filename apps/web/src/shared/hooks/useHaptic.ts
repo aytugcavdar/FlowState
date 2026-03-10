@@ -9,7 +9,7 @@ const PATTERNS = {
     success: [30, 20, 60],     // Akış bağlantısı — çift nabız
     win:     [50, 30, 80, 30, 120], // Kazanma — ritimli güçlü
     error:   [100],             // Kilitli tile vb.
-} as const;
+};
 
 function vibrate(pattern: number | number[]) {
     if (!('vibrate' in navigator)) return;

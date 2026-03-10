@@ -86,7 +86,12 @@ export function StatsPage() {
                 <StatCard
                     icon="⚡"
                     label="En Hızlı Çözüm"
-                    value={formatTime(stats.fastestSolveSeconds)}
+                    value={(() => {
+                        const records = stats.records || {};
+                        const bestTimes = Object.values(records).map(r => r.bestTimeSec);
+                        const absoluteBest = bestTimes.length > 0 ? Math.min(...bestTimes) : 9999;
+                        return formatTime(absoluteBest);
+                    })()}
                     sub="kişisel rekorum"
                 />
                 <StatCard
