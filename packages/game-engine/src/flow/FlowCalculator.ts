@@ -120,10 +120,7 @@ export class FlowCalculator {
         // ─── Karıştırma mantığı (MIXER) ───────────────────
         if (tile.type === 'MIXER') {
            if (colorsAtTile.length >= 2) {
-              const c = new Set(colorsAtTile);
-              if (c.has('cyan') && c.has('magenta')) outColor = 'purple';
-              else if (c.has('cyan') && c.has('yellow')) outColor = 'green';
-              else if (c.has('magenta') && c.has('yellow')) outColor = 'orange';
+              outColor = 'white';
               // İlk rengin propagasyonunu zaten yaptık, şimdi karışmış rengi yeniden ilet
               shouldPropagate = true;
            } else {
@@ -199,12 +196,9 @@ export class FlowCalculator {
       getFlow(pos: Position): FlowColor | null {
         const key = `${pos.row},${pos.col}`;
         const info = tileFlows.get(key);
-        // Eğer MIXER ise karışmış rengi (veya son rengi) göster
+        // Eğer MIXER ise karışmış rengi göster
         if (info && info.colors.length > 1) {
-           const c = new Set(info.colors);
-           if (c.has('cyan') && c.has('magenta')) return 'purple';
-           if (c.has('cyan') && c.has('yellow')) return 'green';
-           if (c.has('magenta') && c.has('yellow')) return 'orange';
+           return 'white';
         }
         return info?.colors[info?.colors.length - 1] ?? null;
       },

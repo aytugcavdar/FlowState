@@ -14,12 +14,12 @@ export const FLOW_COLORS: FlowColor[] = ['cyan', 'magenta', 'yellow', 'white'];
  * v2.0'da kısmi karışım (cyan+magenta=blue vb.) eklenecek.
  */
 const COLOR_MIX_MAP: Record<string, FlowColor> = {
-  // İkili karışımlar — gerçek renk teorisi
-  'cyan+magenta':          'purple',  // Mavi + Kırmızı = Mor
-  'cyan+yellow':           'green',   // Mavi + Sarı = Yeşil
-  'magenta+yellow':        'orange',  // Kırmızı + Sarı = Turuncu
+  // İkili karışımlar — MVP kuralı: Hepsi beyaz
+  'cyan+magenta':          'white',
+  'cyan+yellow':           'white',
+  'magenta+yellow':        'white',
   // Üçlü karışım
-  'cyan+magenta+yellow':   'white',   // Tüm ana renkler = Beyaz
+  'cyan+magenta+yellow':   'white',
   // Karışımlara beyaz eklenmesi
   'cyan+magenta+white':    'white',
   'cyan+white+yellow':     'white',
