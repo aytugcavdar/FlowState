@@ -1,15 +1,23 @@
 // ============================================================
-// GameBoard — Oyun tahtası bileşeni (v1.5)
-// Tile ızgarası + akış overlay + ses + gelişmiş animasyonlar.
+// GameBoard — Oyun tahtası bileşeni (v2.0)
+// Tile ızgarası + akış overlay + ses + animasyonlar.
+// Büyük alt bileşenler kendi dosyalarına taşındı:
+//   - TileCell.tsx
+//   - hooks/useKeyboardNavigation.ts
+//   - hooks/useGameTimer.ts
+//   - hooks/useGameMode.ts
 // ============================================================
 
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useGameStore } from '../model/gameStore';
 import { useThemeStore } from '../model/themeStore';
-import { TileIcon } from '@/entities/tile/ui/TileIcon';
+import { TileCell } from './TileCell';
 import { FlowOverlay } from './FlowOverlay';
 import { useSound } from '@/shared/hooks/useSound';
 import { useHaptic } from '@/shared/hooks/useHaptic';
+import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
+import { useGameTimer } from '../hooks/useGameTimer';
+import { useGameMode } from '../hooks/useGameMode';
 import { TUTORIAL_LEVELS } from '@flowstate/game-engine';
 import './GameBoard.css';
 
@@ -27,85 +35,6 @@ interface ClickedTile {
     timestamp: number;
 }
 
-/** Tek bir tile hücresi (React.memo ile optimize edilmiş) */
-const TileCell = memo(function TileCell({
-    row,
-    col,
-    type,
-    rotation,
-    flowColor,
-    locked,
-    isHinted,
-    justClicked,
-    isKeyboardSelected,
-    theme,
-    onClick,
-}: {
-    row: number;
-    col: number;
-    type: string;
-    rotation: number;
-    flowColor: string | null;
-    locked: boolean;
-    isHinted: boolean;
-    justClicked: boolean;
-    isKeyboardSelected: boolean;
-    theme: string;
-    onClick: () => void;
-}) {
-    const [visualRotation, setVisualRotation] = useState(rotation);
-    const prevRotation = useRef(rotation);
-
-    useEffect(() => {
-        if (rotation !== prevRotation.current) {
-            if ((prevRotation.current === 270 && rotation === 0) || (rotation - prevRotation.current === 90)) {
-                // Forward rotation
-                setVisualRotation(v => v + 90);
-            } else if ((prevRotation.current === 0 && rotation === 270) || (prevRotation.current - rotation === 90)) {
-                // Undo rotation
-                setVisualRotation(v => v - 90);
-            } else {
-                // Reset or different board
-                setVisualRotation(rotation);
-            }
-            prevRotation.current = rotation;
-        }
-    }, [rotation]);
-
-    return (
-        <button
-            className={`tile-cell ${locked ? 'locked' : ''} ${isHinted ? 'hinted' : ''} ${flowColor ? 'has-flow flow-' + flowColor : ''} ${justClicked ? 'just-clicked' : ''} ${isKeyboardSelected ? 'keyboard-selected' : ''}`}
-            onClick={onClick}
-            disabled={locked}
-            data-testid={`tile-${row}-${col}`}
-            data-rotation={rotation}
-            aria-label={`${type} tile, pozisyon ${row},${col}`}
-            id={`tile-${row}-${col}`}
-            style={{
-                '--r': `${visualRotation}deg`,
-                '--r-prev': `${prevRotation.current}deg`,
-            } as React.CSSProperties}
-        >
-            <TileIcon
-                type={type as any}
-                flowColor={flowColor as any}
-                theme={theme}
-            />
-            {/* Kilitli göstergesi */}
-            {locked && <span className="lock-indicator">🔒</span>}
-        </button>
-    );
-}, (prev, next) =>
-    prev.type === next.type &&
-    prev.rotation === next.rotation &&
-    prev.flowColor === next.flowColor &&
-    prev.locked === next.locked &&
-    prev.isHinted === next.isHinted &&
-    prev.justClicked === next.justClicked &&
-    prev.isKeyboardSelected === next.isKeyboardSelected &&
-    prev.theme === next.theme
-);
-
 /** Ana oyun tahtası bileşeni */
 export function GameBoard() {
     const board = useGameStore(s => s.board);
@@ -116,7 +45,6 @@ export function GameBoard() {
     const moveCount = useGameStore(s => s.moveCount);
     const elapsedSeconds = useGameStore(s => s.elapsedSeconds);
     const solved = useGameStore(s => s.solved);
-    const coins = useGameStore(s => s.coins);
     const rotateTile = useGameStore(s => s.rotateTile);
     const undoMove = useGameStore(s => s.undoMove);
     const useHint = useGameStore(s => s.useHint);
@@ -125,26 +53,18 @@ export function GameBoard() {
     const startCampaignLevel = useGameStore(s => s.startCampaignLevel);
     const startTutorialLevel = useGameStore(s => s.startTutorialLevel);
     const currentPuzzleId = useGameStore(s => s.currentPuzzleId);
-    const unlockedLevel = useGameStore(s => s.unlockedLevel);
     const isTutorial = useGameStore(s => s.isTutorial);
     const tutorialStep = useGameStore(s => s.tutorialStep);
     const currentDifficulty = useGameStore(s => s.currentDifficulty);
 
-    const isDaily = currentPuzzleId?.startsWith('daily-') ?? false;
-
-    const activeTheme = useThemeStore((s) => s.activeTheme);
+    const { isDaily } = useGameMode();
+    const activeTheme = useThemeStore(s => s.activeTheme);
 
     const { playRotate, playWin, playClick } = useSound();
     const haptic = useHaptic();
     const [clickedTile, setClickedTile] = useState<ClickedTile | null>(null);
-    const [keyboardCursor, setKeyboardCursor] = useState<{ row: number; col: number } | null>(null);
     const [copyDone, setCopyDone] = useState(false);
     const prevSolved = useRef(false);
-
-    // Klavye imlecini sıfırla oyuna başlarken
-    useEffect(() => {
-        setKeyboardCursor(null);
-    }, [currentPuzzleId]);
 
     // Dynamic grid size
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 700);
@@ -155,11 +75,7 @@ export function GameBoard() {
     }, []);
 
     // Zamanlayıcı
-    useEffect(() => {
-        if (status !== 'playing') return;
-        const interval = setInterval(tick, 1000);
-        return () => clearInterval(interval);
-    }, [status, tick]);
+    useGameTimer(status, tick);
 
     // Kazanma sesi
     useEffect(() => {
@@ -175,51 +91,22 @@ export function GameBoard() {
         playRotate();
         haptic.tapTile();
         setClickedTile({ row, col, timestamp: Date.now() });
-        setKeyboardCursor({ row, col });
+        setCursorPos({ row, col });
         rotateTile(row, col);
         setTimeout(() => setClickedTile(null), 300);
     }, [rotateTile, playRotate, haptic]);
 
-    // ─── Klavye Kontrolleri ───
-    useEffect(() => {
-        if (status !== 'playing') return;
+    // allTiles: board varsa hesapla, yoksa boş dizi
+    const allTiles = board?.getAllTiles() ?? [];
 
-        const handleKeyDown = (e: KeyboardEvent) => {
-            // Sadece ok tuşları, WASD, Space ve Enter için çalış
-            const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'w', 'a', 's', 'd', ' ', 'Enter'];
-            if (!keys.includes(e.key)) return;
-
-            e.preventDefault(); // Ekran kaymasını vs. engelle
-
-            // Eğer henüz bir cursor yoksa, tam ortadan başlat
-            if (!keyboardCursor) {
-                const center = Math.floor(gridSize / 2);
-                setKeyboardCursor({ row: center, col: center });
-                return;
-            }
-
-            const { row, col } = keyboardCursor;
-
-            if (e.key === 'ArrowUp' || e.key === 'w') {
-                setKeyboardCursor({ row: Math.max(0, row - 1), col });
-            } else if (e.key === 'ArrowDown' || e.key === 's') {
-                setKeyboardCursor({ row: Math.min(gridSize - 1, row + 1), col });
-            } else if (e.key === 'ArrowLeft' || e.key === 'a') {
-                setKeyboardCursor({ row, col: Math.max(0, col - 1) });
-            } else if (e.key === 'ArrowRight' || e.key === 'd') {
-                setKeyboardCursor({ row, col: Math.min(gridSize - 1, col + 1) });
-            } else if (e.key === ' ' || e.key === 'Enter') {
-                // Tahtada tile'ı bul ve çevir
-                const tileData = allTiles.find(t => t.pos.row === row && t.pos.col === col)?.tile;
-                if (tileData && !tileData.locked) {
-                    handleTileClick(row, col);
-                }
-            }
-        };
-
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [status, gridSize, keyboardCursor, handleTileClick, board]);
+    // Klavye navigasyonu
+    const { cursor: keyboardCursor, setCursor: setCursorPos } = useKeyboardNavigation({
+        status,
+        gridSize,
+        allTiles,
+        onRotate: handleTileClick,
+        puzzleId: currentPuzzleId,
+    });
 
     if (!board) {
         return (
@@ -249,12 +136,10 @@ export function GameBoard() {
     }).length;
     const progressPercent = sinks.length > 0 ? Math.round((satisfiedSinks / sinks.length) * 100) : 0;
 
-    const allTiles = board.getAllTiles();
-
     // Calculate dynamic tile size — boardPadding must match .game-board CSS padding
     const maxBoardWidth = Math.min(windowWidth - 32, 700);
     const gap = 4;
-    const boardPadding = windowWidth <= 480 ? 8 : 16; // matches GameBoard.css @media 480px rule
+    const boardPadding = windowWidth <= 480 ? 8 : 16;
     const availableWidth = maxBoardWidth - boardPadding * 2;
     const calculatedTileSize = Math.floor((availableWidth - (gridSize - 1) * gap) / gridSize);
     const tileSize = Math.max(26, Math.min(90, calculatedTileSize));
@@ -263,10 +148,6 @@ export function GameBoard() {
         <div className="game-board-container animate-fade-in" id="game-board-container">
             {/* ─── İstatistik Çubuğu ─────────────────────────────── */}
             <div className="game-stats glass-panel" id="game-stats">
-                <div className="game-stat">
-                    <span className="game-stat-icon">💰</span>
-                    <span className="game-stat-value">{coins}</span>
-                </div>
                 <div className="game-stat">
                     <span className="game-stat-icon">⏱</span>
                     <span className="game-stat-value">{formatTime(elapsedSeconds)}</span>
@@ -309,7 +190,7 @@ export function GameBoard() {
                 )}
             </div>
 
-            {/* ─── Eğitim Rehberi (Tutorial Overlay) ────────────────── */}
+            {/* ─── Eğitim Rehberi ──────────────────────────────────── */}
             {isTutorial && tutorialStep !== null && (
                 <div style={{ background: 'rgba(34, 211, 238, 0.15)', border: '1px solid var(--color-cyan)', padding: '12px 20px', borderRadius: 'var(--radius-md)', textAlign: 'center', marginBottom: '8px' }}>
                     <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-cyan)' }}>{TUTORIAL_LEVELS[tutorialStep].title}</h3>
@@ -368,20 +249,17 @@ export function GameBoard() {
 
             {/* ─── Kontrol Butonları ─────────────────────────────── */}
             <div className="game-controls" id="game-controls">
-                {/* İpucu butonu — Günlük modda hiç gösterilmez */}
-                {!isDaily && (
-                    <button
-                        className="btn hint-btn"
-                        onClick={() => { playClick(); useHint(); }}
-                        disabled={status !== 'playing'}
-                        title="İpucu Al"
-                    >
-                        💡 İpucu
-                    </button>
-                )}
-                {/* Günlük modda geri al, ipucu ve yeni bulmaca yok */}
+                {/* Günlük modda tüm kontrol butonları gizlenir */}
                 {!isDaily && (
                     <>
+                        <button
+                            className="btn hint-btn"
+                            onClick={() => { playClick(); useHint(); }}
+                            disabled={status !== 'playing'}
+                            title="İpucu Al"
+                        >
+                            💡 İpucu
+                        </button>
                         <button
                             className="btn"
                             onClick={() => { playClick(); undoMove(); }}
@@ -408,7 +286,6 @@ export function GameBoard() {
             {solved && (
                 <div className="win-overlay" role="dialog" aria-label="Puzzle Solved" id="win-modal">
                     <div className="win-modal glass-panel animate-fade-in">
-                        {/* Konfeti parçacıkları */}
                         <div className="confetti-container">
                             {Array.from({ length: 12 }).map((_, i) => (
                                 <span
@@ -447,7 +324,7 @@ export function GameBoard() {
                                         if (tutorialStep !== null && tutorialStep < TUTORIAL_LEVELS.length - 1) {
                                             startTutorialLevel(tutorialStep + 1);
                                         } else {
-                                            startPractice(5, 1); // Tutorial bitti, serbest moda geç
+                                            startPractice(5, 1);
                                         }
                                     }}
                                     id="btn-next-tutorial"
@@ -462,7 +339,7 @@ export function GameBoard() {
                                         if (currentPuzzleId?.startsWith('campaign-')) {
                                             const currentLevelId = parseInt(currentPuzzleId.split('-')[1]);
                                             const nextLevelId = currentLevelId + 1;
-                                            if (nextLevelId <= 100 && nextLevelId <= unlockedLevel) {
+                                            if (nextLevelId <= 100) {
                                                 startCampaignLevel(nextLevelId);
                                             } else {
                                                 useGameStore.getState().reset();
@@ -476,7 +353,6 @@ export function GameBoard() {
                                     {currentPuzzleId?.startsWith('campaign-') ? '▶ Sonraki Bölüm' : '▶ Sonraki Bulmaca'}
                                 </button>
                             )}
-                            {/* Share Butonu */}
                             <button
                                 className="btn"
                                 onClick={() => {

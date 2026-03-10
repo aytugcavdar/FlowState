@@ -4,30 +4,26 @@
 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useGameStore } from '../model/gameStore';
+import { useGameMode } from '../hooks/useGameMode';
 import './WinModal.css';
 
 export function WinModal() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { moveCount, elapsedSeconds, solved, startPractice,
-        gridSize, startDaily, currentPuzzleId, reset, lastStars } = useGameStore(s => ({
-            moveCount: s.moveCount,
-            elapsedSeconds: s.elapsedSeconds,
-            solved: s.solved,
-            startPractice: s.startPractice,
-            gridSize: s.gridSize,
-            startDaily: s.startDaily,
-            currentPuzzleId: s.currentPuzzleId,
-            reset: s.reset,
-            lastStars: s.lastStars,
-        }));
+
+    const moveCount = useGameStore(s => s.moveCount);
+    const elapsedSeconds = useGameStore(s => s.elapsedSeconds);
+    const solved = useGameStore(s => s.solved);
+    const startPractice = useGameStore(s => s.startPractice);
+    const gridSize = useGameStore(s => s.gridSize);
+    const startDaily = useGameStore(s => s.startDaily);
+    const reset = useGameStore(s => s.reset);
+    const lastStars = useGameStore(s => s.lastStars);
+
+    const { isDaily, isCampaign, isPractice } = useGameMode();
+    const isPracticeRoute = location.pathname === '/practice';
 
     if (!solved) return null;
-
-    const isDaily = currentPuzzleId?.startsWith('daily-');
-    const isCampaign = currentPuzzleId?.startsWith('campaign-');
-    const isPractice = currentPuzzleId?.startsWith('practice-');
-    const isPracticeRoute = location.pathname === '/practice';
 
     const mins = Math.floor(elapsedSeconds / 60);
     const secs = elapsedSeconds % 60;
