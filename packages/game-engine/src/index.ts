@@ -19,6 +19,7 @@ export { mixColors, isWhite, FLOW_COLORS } from './flow/FlowColor';
 
 // ─── Solver Modülü ──────────────────────────────────────────
 export { DifficultyEstimator } from './solver/DifficultyEstimator';
+export { solvePuzzle, isSolvable } from './solver/PuzzleSolver';
 
 // ─── Generator Modülü ───────────────────────────────────────
 export { LevelGenerator } from './generator/LevelGenerator';

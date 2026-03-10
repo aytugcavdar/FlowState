@@ -696,6 +696,10 @@ export class LevelGenerator {
     return { ...puzzle, tiles: scrambledTiles };
   }
 
+  // scrambleWithVerification kaldırıldı — generateRandomWalk zaten geçerli
+  // yol üretir ve kullanıcı her tile'ı döndürebildiği için tüm puzzlelar çözülebilirdir.
+
+
   /** Fallback — basit ama geçerli puzzle */
   private static createFallbackPuzzle(gridSize: number): PuzzleDefinition {
     const sourceColor: FlowColor = randomItem(SOURCE_COLORS);

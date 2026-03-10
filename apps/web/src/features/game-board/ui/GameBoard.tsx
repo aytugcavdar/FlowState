@@ -213,8 +213,7 @@ export function GameBoard() {
                     } as React.CSSProperties}
                 >
                     {allTiles.map(({ pos, tile }) => {
-                        const flowInfo = flowResult?.tileFlows.get(`${pos.row},${pos.col}`);
-                        const flowColor = flowInfo?.colors[0] ?? null;
+                        const flowColor = flowResult?.getFlow(pos) ?? null;
                         const justClicked = clickedTile?.row === pos.row && clickedTile?.col === pos.col;
                         const isKeyboardSelected = keyboardCursor?.row === pos.row && keyboardCursor?.col === pos.col;
 
@@ -331,6 +330,11 @@ export function GameBoard() {
                                 >
                                     {tutorialStep !== null && tutorialStep < TUTORIAL_LEVELS.length - 1 ? '▶ Sonraki Aşama' : '▶ Eğitimi Bitir'}
                                 </button>
+                            ) : isDaily ? (
+                                /* Günlük modda sadece bilgi mesajı */
+                                <p style={{ color: 'var(--color-cyan)', fontSize: '0.9rem', textAlign: 'center', padding: '0.5rem' }}>
+                                    📅 Yarın yeni bulmaca seni bekliyor!
+                                </p>
                             ) : (
                                 <button
                                     className="btn btn-primary"

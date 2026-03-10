@@ -115,29 +115,33 @@ export class FlowCalculator {
 
       if (isNewColor) {
         let outColor = color;
+        let shouldPropagate = true;
 
-        // Karıştırma mantığı (MIXER)
-        if (tile.type === 'MIXER' && colorsAtTile.length >= 2) {
-           const c = new Set(colorsAtTile);
-           if (c.has('cyan') && c.has('magenta')) outColor = 'purple';
-           else if (c.has('cyan') && c.has('yellow')) outColor = 'green';
-           else if (c.has('magenta') && c.has('yellow')) outColor = 'orange';
-           
-           // MIXER'ın rengi değiştiğinde, önceden geçtiği eski renkli kenarları güncellemek için
-           // ilerisini yeniden kuyruğa ekleyecek.
+        // ─── Karıştırma mantığı (MIXER) ───────────────────
+        if (tile.type === 'MIXER') {
+           if (colorsAtTile.length >= 2) {
+              const c = new Set(colorsAtTile);
+              if (c.has('cyan') && c.has('magenta')) outColor = 'purple';
+              else if (c.has('cyan') && c.has('yellow')) outColor = 'green';
+              else if (c.has('magenta') && c.has('yellow')) outColor = 'orange';
+              // İlk rengin propagasyonunu zaten yaptık, şimdi karışmış rengi yeniden ilet
+              shouldPropagate = true;
+           } else {
+              // Henüz tek renk var, ilerisi ilk renk ile dolduruldu; bekle
+              shouldPropagate = true;
+           }
         }
 
         // Portal Teleportation
         if (tile.type === 'PORTAL') {
            const allTiles = board.getAllTiles();
-           const pairedPortal = allTiles.find(t => 
-               t.tile.type === 'PORTAL' && 
-               t.tile.portalId === tile.portalId && 
+           const pairedPortal = allTiles.find(t =>
+               t.tile.type === 'PORTAL' &&
+               t.tile.portalId === tile.portalId &&
                (t.pos.row !== pos.row || t.pos.col !== pos.col)
            );
-           
+
            if (pairedPortal) {
-               // Make an edge for visualization (optional)
                const edgeKey = `portal:${pos.row},${pos.col}-${pairedPortal.pos.row},${pairedPortal.pos.col}`;
                if (!allEdges.has(edgeKey)) {
                    allEdges.set(edgeKey, { from: pos, to: pairedPortal.pos, color: outColor });
@@ -147,22 +151,23 @@ export class FlowCalculator {
                    pos: pairedPortal.pos,
                    color: outColor,
                    fromPos: pos,
-                   fromDir: null, // It entered from hyperspace, so fromDir is null to allow exiting any open port
+                   fromDir: null,
                });
            }
         }
 
-        const neighbors = board.getConnectedNeighbors(pos);
-        for (const { pos: neighborPos, direction } of neighbors) {
-          // Geri akışı engelle: Geldiği tile'a geri dönmesin
-          if (fromPos && neighborPos.row === fromPos.row && neighborPos.col === fromPos.col) continue;
-          
-          queue.push({
-            pos: neighborPos,
-            color: outColor,
-            fromPos: pos,
-            fromDir: Position.oppositeDirection(direction),
-          });
+        if (shouldPropagate) {
+          const neighbors = board.getConnectedNeighbors(pos);
+          for (const { pos: neighborPos, direction } of neighbors) {
+            if (fromPos && neighborPos.row === fromPos.row && neighborPos.col === fromPos.col) continue;
+
+            queue.push({
+              pos: neighborPos,
+              color: outColor,
+              fromPos: pos,
+              fromDir: Position.oppositeDirection(direction),
+            });
+          }
         }
       }
     }
