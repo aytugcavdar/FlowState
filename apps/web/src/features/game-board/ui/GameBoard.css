@@ -168,6 +168,8 @@
 .tile-cell {
     width: var(--tile-size);
     height: var(--tile-size);
+    min-width: 44px;
+    min-height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;

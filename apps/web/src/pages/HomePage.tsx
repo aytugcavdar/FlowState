@@ -5,7 +5,6 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { useThemeStore, ThemeId } from '../features/game-board/model/themeStore';
 import { useGameStore } from '../features/game-board/model/gameStore';
 import { useMetaStore } from '../features/meta/model/metaStore';
 import './HomePage.css';
@@ -83,7 +82,6 @@ function useDailyCompleted() {
 }
 
 export function HomePage() {
-    const { activeTheme, setTheme } = useThemeStore();
     const navigate = useNavigate();
     const startTutorialLevel = useGameStore(s => s.startTutorialLevel);
     const { canInstall, install } = usePWAInstall();
@@ -95,11 +93,7 @@ export function HomePage() {
     const xp = useMetaStore(s => s.xp);
     const dailyCompleted = useDailyCompleted();
 
-    const themes: { id: ThemeId; name: string; icon: string }[] = [
-        { id: 'theme-cyberpunk', name: 'Cyberpunk', icon: '⚡' },
-        { id: 'theme-plumber', name: 'Tesisatçı', icon: '🔧' },
-        { id: 'theme-laser', name: 'Lazer', icon: '✨' },
-    ];
+
 
     const handleStartTutorial = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -155,9 +149,12 @@ export function HomePage() {
                     <div className="summary-divider" />
                     <div className="summary-item">
                         <span className="summary-value">
-                            {stats.fastestSolveSeconds < 9999
-                                ? `${stats.fastestSolveSeconds}s`
-                                : '—'}
+                            {(() => {
+                                const records = stats.records || {};
+                                const bestTimes = Object.values(records).map(r => r.bestTimeSec);
+                                const absoluteBest = bestTimes.length > 0 ? Math.min(...bestTimes) : 9999;
+                                return absoluteBest < 9999 ? `${absoluteBest}s` : '—';
+                            })()}
                         </span>
                         <span className="summary-label">En Hızlı</span>
                     </div>
@@ -250,23 +247,6 @@ export function HomePage() {
                 </div>
             </section>
 
-            {/* ─── Tema Seçimi ──────────────────────────────────── */}
-            <section className="theme-selector glass-panel" id="theme-selector">
-                <h2 className="section-title">🎨 Tema</h2>
-                <div className="theme-buttons">
-                    {themes.map(t => (
-                        <button
-                            key={t.id}
-                            className={`theme-btn ${activeTheme === t.id ? 'active' : ''}`}
-                            onClick={() => setTheme(t.id)}
-                            id={`theme-${t.id}`}
-                        >
-                            <span>{t.icon}</span>
-                            <span>{t.name}</span>
-                        </button>
-                    ))}
-                </div>
-            </section>
         </div>
     );
 }

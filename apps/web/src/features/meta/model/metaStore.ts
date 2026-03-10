@@ -27,13 +27,16 @@ export const ACHIEVEMENTS_DEF: AchievementDef[] = [
 
 export interface MetaStats {
     totalSolved: number;
-    perfectSolves: number;
+    perfectSolves: number; // Mükemmel çözüm (sıfır geri alma vb. eklenebilir)
     puzzlesWithoutHints: number;
-    fastestSolveSeconds: number;
     highestGridSize: number;
     highestCampaignLevel: number;
     currentStreak: number;
     lastSolveDate: string | null;
+
+    // Rekorlar: [mode: string] -> { bestTimeSec: number, bestMoves: number }
+    // mode formatı: "daily", "practice-5x5", "practice-7x7" vs.
+    records: Record<string, { bestTimeSec: number; bestMoves: number }>;
 }
 
 export interface MetaStoreState {
@@ -44,7 +47,12 @@ export interface MetaStoreState {
     lastDailyCompletedDate: string | null;
 
     // Actions
-    recordSolve: (params: { seconds: number, usedHints: boolean, isPerfect: boolean, gridSize: number, campaignLevelId?: number }) => void;
+    recordSolve: (params: { seconds: number, moves: number, usedHints: boolean, isPerfect: boolean, gridSize: number, campaignLevelId?: number, isDaily?: boolean }) => {
+        isNewRecordTime: boolean;
+        isNewRecordMoves: boolean;
+        bestTimeSec: number;
+        bestMoves: number;
+    };
     checkAchievements: () => string[];
     markDailyCompleted: () => void;
 }
@@ -53,11 +61,11 @@ const INITIAL_STATS: MetaStats = {
     totalSolved: 0,
     perfectSolves: 0,
     puzzlesWithoutHints: 0,
-    fastestSolveSeconds: 9999,
     highestGridSize: 0,
     highestCampaignLevel: 1,
     currentStreak: 0,
     lastSolveDate: null,
+    records: {},
 };
 
 export const useMetaStore = create<MetaStoreState>()(
@@ -73,19 +81,53 @@ export const useMetaStore = create<MetaStoreState>()(
                 set({ lastDailyCompletedDate: today });
             },
 
-            recordSolve: ({ seconds, usedHints, isPerfect, gridSize, campaignLevelId }) => {
+            recordSolve: ({ seconds, moves, usedHints, isPerfect, gridSize, campaignLevelId, isDaily }) => {
                 const today = new Date().toDateString();
+                let result = { isNewRecordTime: false, isNewRecordMoves: false, bestTimeSec: seconds, bestMoves: moves };
+
                 set((state) => {
                     const stats = { ...state.stats };
                     
                     stats.totalSolved += 1;
                     if (isPerfect) stats.perfectSolves += 1;
                     if (!usedHints) stats.puzzlesWithoutHints += 1;
-                    if (seconds < stats.fastestSolveSeconds) stats.fastestSolveSeconds = seconds;
                     if (gridSize > stats.highestGridSize) stats.highestGridSize = gridSize;
                     if (campaignLevelId && campaignLevelId > stats.highestCampaignLevel) {
                         stats.highestCampaignLevel = campaignLevelId;
                     }
+
+                    // Rekor hesaplama
+                    const modeKey = isDaily ? 'daily' : (campaignLevelId ? `campaign-${campaignLevelId}` : `practice-${gridSize}x${gridSize}`);
+                    if (!stats.records) stats.records = {};
+                    
+                    const prevRecord = stats.records[modeKey];
+                    let newBestTime = seconds;
+                    let newBestMoves = moves;
+
+                    if (!prevRecord) {
+                        result.isNewRecordTime = true;
+                        result.isNewRecordMoves = true;
+                        stats.records[modeKey] = { bestTimeSec: seconds, bestMoves: moves };
+                    } else {
+                        if (seconds < prevRecord.bestTimeSec) {
+                            newBestTime = seconds;
+                            result.isNewRecordTime = true;
+                        } else {
+                            newBestTime = prevRecord.bestTimeSec;
+                        }
+
+                        if (moves < prevRecord.bestMoves) {
+                            newBestMoves = moves;
+                            result.isNewRecordMoves = true;
+                        } else {
+                            newBestMoves = prevRecord.bestMoves;
+                        }
+                        
+                        stats.records[modeKey] = { bestTimeSec: newBestTime, bestMoves: newBestMoves };
+                    }
+                    
+                    result.bestTimeSec = newBestTime;
+                    result.bestMoves = newBestMoves;
 
                     // Streak calculation
                     if (stats.lastSolveDate !== today) {
@@ -104,6 +146,8 @@ export const useMetaStore = create<MetaStoreState>()(
                 
                 // Then immediately check for achievements
                 get().checkAchievements();
+
+                return result;
             },
 
             checkAchievements: () => {
@@ -124,11 +168,19 @@ export const useMetaStore = create<MetaStoreState>()(
                 };
 
                 // Evaluate conditions
+                
+                // Find the absolute fastest time across all records
+                let absoluteBestTime = 9999;
+                for (const modeKey in stats.records) {
+                    const time = stats.records[modeKey].bestTimeSec;
+                    if (time < absoluteBestTime) absoluteBestTime = time;
+                }
+
                 checkAndUnlock('first_solve', stats.totalSolved >= 1);
                 checkAndUnlock('perfect_solve', stats.perfectSolves >= 1);
                 checkAndUnlock('puzzles_10', stats.totalSolved >= 10);
                 checkAndUnlock('puzzles_50', stats.totalSolved >= 50);
-                checkAndUnlock('speed_demon', stats.fastestSolveSeconds <= 30);
+                checkAndUnlock('speed_demon', absoluteBestTime <= 30);
                 checkAndUnlock('no_hints', stats.puzzlesWithoutHints >= 1);
                 checkAndUnlock('big_board', stats.highestGridSize >= 7);
                 checkAndUnlock('level_5', stats.highestCampaignLevel >= 5);

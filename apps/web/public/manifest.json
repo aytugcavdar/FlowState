@@ -2,7 +2,7 @@
     "name": "FlowState",
     "short_name": "FlowState",
     "description": "Günlük mantık bulmaca oyunu — Tile'ları döndür, akışları yönlendir!",
-    "start_url": "/",
+    "start_url": "https://aytugcavdar.github.io/FlowState/",
     "display": "standalone",
     "background_color": "#0a0e1a",
     "theme_color": "#22d3ee",

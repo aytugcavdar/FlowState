@@ -18,6 +18,7 @@ import { useHaptic } from '@/shared/hooks/useHaptic';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { useGameMode } from '../hooks/useGameMode';
+import { useMetaStore } from '../../meta/model/metaStore';
 import { TUTORIAL_LEVELS } from '@flowstate/game-engine';
 import './GameBoard.css';
 
@@ -300,20 +301,43 @@ export function GameBoard() {
                         </div>
                         <h2 className="win-title">🎉 Tebrikler!</h2>
                         <p className="win-subtitle">Bulmacayı çözdün!</p>
-                        <div className="win-stats">
-                            <div className="win-stat">
-                                <span className="win-stat-label">Süre</span>
-                                <span className="win-stat-value">{formatTime(elapsedSeconds)}</span>
-                            </div>
-                            <div className="win-stat">
-                                <span className="win-stat-label">Hamle</span>
-                                <span className="win-stat-value">{moveCount}</span>
-                            </div>
-                            <div className="win-stat">
-                                <span className="win-stat-label">XP</span>
-                                <span className="win-stat-value xp-reward">+{50 + gridSize * 5}</span>
-                            </div>
-                        </div>
+
+                        {/* ─── Yeni Rekor Gösterimi ───────────────────── */}
+                        {(() => {
+                            const modeKey = isDaily ? 'daily' : (currentPuzzleId?.startsWith('campaign-') ? currentPuzzleId : `practice-${gridSize}x${gridSize}`);
+                            const record = useMetaStore.getState().stats.records?.[modeKey];
+                            const isNewTime = record?.bestTimeSec === elapsedSeconds;
+                            const isNewMoves = record?.bestMoves === moveCount;
+
+                            return (
+                                <div className="win-stats" style={{ flexDirection: 'column', gap: '8px', padding: '16px' }}>
+                                    <div className="win-stat" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'row' }}>
+                                        <span className="win-stat-label">Süre</span>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div className="win-stat-value">
+                                                {formatTime(elapsedSeconds)}
+                                                {isNewTime && <span style={{ fontSize: '0.6rem', color: 'var(--color-yellow)', marginLeft: '8px', verticalAlign: 'middle', border: '1px solid var(--color-yellow)', padding: '2px 4px', borderRadius: '4px' }}>YENİ REKOR</span>}
+                                            </div>
+                                            {!isNewTime && record && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rekor: {formatTime(record.bestTimeSec)}</div>}
+                                        </div>
+                                    </div>
+                                    <div className="win-stat" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'row' }}>
+                                        <span className="win-stat-label">Hamle</span>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div className="win-stat-value">
+                                                {moveCount}
+                                                {isNewMoves && <span style={{ fontSize: '0.6rem', color: 'var(--color-yellow)', marginLeft: '8px', verticalAlign: 'middle', border: '1px solid var(--color-yellow)', padding: '2px 4px', borderRadius: '4px' }}>YENİ REKOR</span>}
+                                            </div>
+                                            {!isNewMoves && record && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rekor: {record.bestMoves}</div>}
+                                        </div>
+                                    </div>
+                                    <div className="win-stat" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'row' }}>
+                                        <span className="win-stat-label">XP</span>
+                                        <span className="win-stat-value xp-reward">+{50 + gridSize * 5}</span>
+                                    </div>
+                                </div>
+                            );
+                        })()}
                         <div className="win-actions">
                             {isTutorial ? (
                                 <button

@@ -261,14 +261,15 @@ export const useGameStore = create<GameState>()(
             if (veryFast && noHints) stars = 3;
             else if ((fastEnough && noHints) || veryFast) stars = 2;
             // Meta Store'a kaydet (Achievement)
-            // setTimeout to avoid reacting inline if needed, but synchronous is fine
             setTimeout(() => {
                 useMetaStore.getState().recordSolve({
                     seconds: state.elapsedSeconds,
+                    moves: state.moveCount + 1, // +1 because we are currently processing the winning move
                     usedHints: state.hintsUsedInPuzzle > 0,
                     isPerfect: stars === 3,
                     gridSize: state.gridSize,
-                    campaignLevelId: campaignLvlId
+                    campaignLevelId: campaignLvlId,
+                    isDaily: state.currentPuzzleId?.startsWith('daily-')
                 });
             }, 0);
           }
@@ -373,10 +374,73 @@ export const useGameStore = create<GameState>()(
     }),
     {
       name: 'flowstate-game-storage',
-      partialize: (state) => ({ 
-        coins: state.coins, 
-        unlockedLevel: state.unlockedLevel 
-      }),
+      partialize: (state) => {
+        // Hangi verilerin localStorage'a yazılacağını seç (Kapanınca gitmesin istediklerimiz)
+        // Eğer günlük oyun değilse (pratik veya kampanya) board'u kaydet
+        const isDaily = state.currentPuzzleId?.startsWith('daily-');
+        
+        let savedDef: import('@flowstate/shared-types').PuzzleDefinition | null = null;
+        if (!isDaily && state.board) {
+            
+            // Reconstruct nested tile array since Board only exposes getAllTiles()
+            const size = state.board.gridSize;
+            const allTiles = state.board.getAllTiles();
+            const grid: any[][] = Array(size).fill(null).map(() => Array(size).fill(null));
+            allTiles.forEach(({ pos, tile }) => {
+                grid[pos.row][pos.col] = {
+                    type: tile.type,
+                    rotation: tile.rotation,
+                    locked: tile.locked,
+                    isHinted: tile.isHinted,
+                };
+            });
+
+            savedDef = {
+                gridSize: size,
+                tiles: grid,
+                sources: state.board.getSources().map(s => ({ row: s.pos.row, col: s.pos.col, color: s.color })),
+                sinks: state.board.getSinks().map(s => ({ row: s.pos.row, col: s.pos.col, requiredColors: s.requiredColors })),
+            };
+        }
+
+        return { 
+          coins: state.coins, 
+          unlockedLevel: state.unlockedLevel,
+          
+          // Oyun resume verileri (günlük olmayanlar)
+          savedBoardDef: savedDef ? JSON.stringify(savedDef) : null,
+          gridSize: state.gridSize,
+          solved: state.solved,
+          status: state.status,
+          moveCount: state.moveCount,
+          elapsedSeconds: state.elapsedSeconds,
+          hintsUsedInPuzzle: state.hintsUsedInPuzzle,
+          currentPuzzleId: state.currentPuzzleId,
+          undoStack: state.undoStack,
+        };
+      },
+      onRehydrateStorage: () => (state, error) => {
+        if (error || !state) return;
+        
+        // LocalStorage'dan yüklenen objede özel deserializasyon işlemleri
+        const anyState = state as any;
+        if (anyState.savedBoardDef) {
+           try {
+               const def = JSON.parse(anyState.savedBoardDef) as import('@flowstate/shared-types').PuzzleDefinition;
+               const restoredBoard = Board.fromDefinition(def);
+               const flowResult = FlowCalculator.calculate(restoredBoard);
+               
+               state.board = restoredBoard;
+               state.flowResult = flowResult;
+               state.flowPaths = flowResult.flowPaths;
+               
+           } catch(e) {
+               console.error("Board rehydration failed", e);
+               state.board = null;
+               state.status = 'idle';
+           }
+        }
+      }
     }
   )
 );

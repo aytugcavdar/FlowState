@@ -215,10 +215,20 @@ export class LevelGenerator {
     portMap.set(`${current.row},${current.col}`, [sourceDir]);
 
     // Hedef minimum mesafe
-    const minPathLength = Math.max(gridSize, Math.floor(gridSize * 1.2));
+    let minPathLength = Math.max(gridSize, Math.floor(gridSize * 1.2));
+    if (gridSize < 7) {
+        // Küçük ızgaralarda (4-6) daha uzun, dolambaçlı yollar üretilmesi için min uzunluğu artır.
+        minPathLength = Math.floor(gridSize * 2.0);
+    }
+    
     // Zorluk ile yol karmaşıklığı
     const maxPathLength = gridSize * gridSize - 2;
-    const targetLength = Math.min(maxPathLength, minPathLength + Math.floor(difficulty * 1.5));
+    
+    let difficultyMultiplier = 1.5;
+    if (gridSize < 7) {
+        difficultyMultiplier = 2.5; // Küçük ızgaralarda zorluk çarpanını artır ki çabuk bitsin
+    }
+    const targetLength = Math.min(maxPathLength, minPathLength + Math.floor(difficulty * difficultyMultiplier));
 
     let steps = 0;
     const maxSteps = gridSize * gridSize * 3;
@@ -424,9 +434,18 @@ export class LevelGenerator {
       const sourceDir: Dir = sourceEdge === 'left' ? 'E' : 'S';
       portMap.set(`${current.row},${current.col}`, [sourceDir]);
 
-      const minPathLength = Math.max(gridSize, Math.floor(gridSize * 1.2));
+      let minPathLength = Math.max(gridSize, Math.floor(gridSize * 1.2));
+      if (gridSize < 7) {
+          minPathLength = Math.floor(gridSize * 2.0);
+      }
+      
       const maxPathLength = gridSize * gridSize - 2;
-      const targetLength = Math.min(maxPathLength, minPathLength + Math.floor(difficulty * 1.5));
+      
+      let difficultyMultiplier = 1.5;
+      if (gridSize < 7) {
+          difficultyMultiplier = 2.5; 
+      }
+      const targetLength = Math.min(maxPathLength, minPathLength + Math.floor(difficulty * difficultyMultiplier));
 
       let steps = 0;
       while (steps < gridSize * gridSize * 3) {
