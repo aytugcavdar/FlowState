@@ -40,10 +40,13 @@ export interface MetaStoreState {
     unlockedAchievements: string[];
     xp: number;
     stats: MetaStats;
+    /** Günlük bulmacayı son tamamlama tarihi (YYYY-MM-DD) */
+    lastDailyCompletedDate: string | null;
 
     // Actions
     recordSolve: (params: { seconds: number, usedHints: boolean, isPerfect: boolean, gridSize: number, campaignLevelId?: number }) => void;
-    checkAchievements: () => string[]; // Returns newly unlocked achievement IDs
+    checkAchievements: () => string[];
+    markDailyCompleted: () => void;
 }
 
 const INITIAL_STATS: MetaStats = {
@@ -60,9 +63,15 @@ const INITIAL_STATS: MetaStats = {
 export const useMetaStore = create<MetaStoreState>()(
     persist(
         (set, get) => ({
-            unlockedAchievements: [],
+        unlockedAchievements: [],
             xp: 0,
             stats: INITIAL_STATS,
+            lastDailyCompletedDate: null,
+
+            markDailyCompleted: () => {
+                const today = new Date().toISOString().slice(0, 10);
+                set({ lastDailyCompletedDate: today });
+            },
 
             recordSolve: ({ seconds, usedHints, isPerfect, gridSize, campaignLevelId }) => {
                 const today = new Date().toDateString();

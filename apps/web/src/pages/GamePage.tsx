@@ -1,21 +1,13 @@
 // ============================================================
-// GamePage — Oyun sayfası (v3)
+// GamePage — Oyun sayfası (v4)
 // /play → Günlük bulmaca   /practice → Seçimli pratik modu
 // ============================================================
 
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GameBoard, useGameStore } from '@/features/game-board';
+import { useMetaStore } from '@/features/meta/model/metaStore';
 import './GamePage.css';
-
-/** Bugünkü günlük bulmaca daha önce çözüldü mü? */
-function useDailyAlreadySolved() {
-    const currentPuzzleId = useGameStore(s => s.currentPuzzleId);
-    const status = useGameStore(s => s.status);
-    const todayKey = `daily-${new Date().toISOString().slice(0, 10)}`;
-    // Bugünün bulmacası zaten çözüldüyse true
-    return currentPuzzleId === todayKey && status === 'solved';
-}
 
 /** Gece yarısına kalan süre */
 function useCountdown() {
@@ -24,10 +16,11 @@ function useCountdown() {
         const midnight = new Date(now);
         midnight.setHours(24, 0, 0, 0);
         const diff = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
-        const h = Math.floor(diff / 3600);
-        const m = Math.floor((diff % 3600) / 60);
-        const s = diff % 60;
-        return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        return {
+            h: Math.floor(diff / 3600),
+            m: Math.floor((diff % 3600) / 60),
+            s: diff % 60,
+        };
     };
     const [time, setTime] = useState(getRemaining);
     useEffect(() => {
@@ -37,24 +30,88 @@ function useCountdown() {
     return time;
 }
 
-/** Günlük tamamlandı ekranı */
+/** Premium günlük tamamlandı ekranı */
 function DailyCompletedScreen() {
-    const countdown = useCountdown();
+    const { h, m, s } = useCountdown();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const stats = useMetaStore(st => st.stats);
+
     return (
-        <div className="daily-done-screen glass-panel neon-border" id="daily-done-screen">
-            <div style={{ fontSize: '3rem' }}>✅</div>
-            <h2 style={{ color: 'var(--color-cyan)', margin: '0.5rem 0' }}>Bugünü Tamamladın!</h2>
-            <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-                Yeni bulmaca için geri sayım:
-            </p>
-            <div style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '2rem',
-                fontWeight: 900,
-                color: 'var(--color-magenta)',
-                letterSpacing: '0.1em',
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.5rem',
+            padding: '2rem 1rem',
+            width: '100%',
+            maxWidth: '420px',
+            margin: '0 auto',
+        }}>
+            {/* Trophy */}
+            <div style={{ fontSize: '4rem', lineHeight: 1, filter: 'drop-shadow(0 0 24px rgba(250,204,21,0.6))' }}>
+                🏆
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+                <h1 style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '1.4rem',
+                    color: 'var(--color-yellow)',
+                    margin: 0,
+                    letterSpacing: '0.05em',
+                }}>
+                    BUGÜNÜ TAMAMLADIN!
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', marginTop: '0.4rem', fontSize: '0.9rem' }}>
+                    Yarın seni yeni bir meydan okuma bekliyor.
+                </p>
+            </div>
+
+            {/* Stats row */}
+            {stats.totalSolved > 0 && (
+                <div className="glass-panel" style={{
+                    display: 'flex',
+                    gap: '1.5rem',
+                    padding: '1rem 2rem',
+                    borderRadius: 'var(--radius-md)',
+                }}>
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'var(--color-cyan)', fontWeight: 900 }}>
+                            🔥 {stats.currentStreak}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>Günlük Seri</div>
+                    </div>
+                    <div style={{ width: '1px', background: 'rgba(255,255,255,0.08)' }} />
+                    <div style={{ textAlign: 'center' }}>
+                        <div style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', color: 'var(--color-cyan)', fontWeight: 900 }}>
+                            {stats.totalSolved}
+                        </div>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '2px' }}>Toplam</div>
+                    </div>
+                </div>
+            )}
+
+            {/* Countdown */}
+            <div className="glass-panel neon-border" style={{
+                padding: '1.25rem 2rem',
+                borderRadius: 'var(--radius-lg)',
+                textAlign: 'center',
+                width: '100%',
             }}>
-                {countdown}
+                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                    Yeni bulmacaya kalan
+                </div>
+                <div style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: '2.5rem',
+                    fontWeight: 900,
+                    color: 'var(--color-magenta)',
+                    letterSpacing: '0.08em',
+                    lineHeight: 1,
+                    filter: 'drop-shadow(0 0 12px rgba(232,121,249,0.5))',
+                }}>
+                    {pad(h)}:{pad(m)}:{pad(s)}
+                </div>
             </div>
         </div>
     );
@@ -107,18 +164,32 @@ export function GamePage() {
     const isPracticeRoute = location.pathname === '/practice';
 
     const status = useGameStore(s => s.status);
+    const currentPuzzleId = useGameStore(s => s.currentPuzzleId);
     const startPractice = useGameStore(s => s.startPractice);
     const startDaily = useGameStore(s => s.startDaily);
     const board = useGameStore(s => s.board);
     const reset = useGameStore(s => s.reset);
-    const dailyAlreadySolved = useDailyAlreadySolved();
+
+    // Persisted daily completion — survives reset()
+    const lastDailyCompletedDate = useMetaStore(s => s.lastDailyCompletedDate);
+    const markDailyCompleted = useMetaStore(s => s.markDailyCompleted);
+
+    const today = new Date().toISOString().slice(0, 10);
+    const dailyAlreadySolved = lastDailyCompletedDate === today;
+
+    // Günlük çözülünce metaStore'a kaydet
+    useEffect(() => {
+        if (status === 'solved' && currentPuzzleId === `daily-${today}` && !dailyAlreadySolved) {
+            markDailyCompleted();
+        }
+    }, [status, currentPuzzleId, today, dailyAlreadySolved, markDailyCompleted]);
 
     // Rota değiştiğinde board'ı sıfırla (daily ↔ practice arası geçiş)
     useEffect(() => {
         reset();
     }, [isPracticeRoute]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // /play → günlük bulmaca (eğer bugün çözülmediyse), /practice → bekle
+    // /play → günlük bulmaca (bugün çözülmediyse)
     useEffect(() => {
         if (!board && status === 'idle') {
             if (!isPracticeRoute && !dailyAlreadySolved) {
@@ -127,8 +198,8 @@ export function GamePage() {
         }
     }, [board, status, isPracticeRoute, startDaily, dailyAlreadySolved]);
 
-    // Günlük zaten çözüldüyse tamamlandı ekranı göster
-    if (!isPracticeRoute && dailyAlreadySolved) {
+    // Günlük zaten tamamlandıysa, kazanma ekranı kapatıldıktan sonra tamamlandı ekranı göster
+    if (!isPracticeRoute && dailyAlreadySolved && status !== 'playing' && status !== 'solved') {
         return (
             <div className="game-page" id="game-page">
                 <div className="game-area">
