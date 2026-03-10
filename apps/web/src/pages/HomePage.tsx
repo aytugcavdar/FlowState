@@ -75,13 +75,11 @@ function usePWAInstall() {
     return { canInstall: !!prompt && !installed, install };
 }
 
-/** Günlük puzzle bugün tamamlandı mı? */
+/** Günlük puzzle bugün tamamlandı mı? — metaStore'dan oku (persist edilmiş) */
 function useDailyCompleted() {
-    // gameStore persist'ten okunan currentPuzzleId ile karşılaştır
-    const currentPuzzleId = useGameStore(s => s.currentPuzzleId);
-    const status = useGameStore(s => s.status);
-    const todayKey = `daily-${new Date().toISOString().slice(0, 10)}`;
-    return currentPuzzleId === todayKey && status === 'solved';
+    const lastDailyCompletedDate = useMetaStore(s => s.lastDailyCompletedDate);
+    const today = new Date().toISOString().slice(0, 10);
+    return lastDailyCompletedDate === today;
 }
 
 export function HomePage() {
@@ -174,22 +172,43 @@ export function HomePage() {
                     className={`mode-card mode-card-featured glass-panel neon-border ${dailyCompleted ? 'mode-completed' : ''}`}
                     id="card-daily"
                 >
-                    <div className="mode-icon">📅</div>
+                    <div className="mode-icon">{dailyCompleted ? '🏆' : '📅'}</div>
                     <div className="mode-card-body">
                         <h2 className="mode-title">
                             Günlük Bulmaca
                             {dailyCompleted && <span className="done-badge">✅ Tamamlandı</span>}
                         </h2>
-                        <p className="mode-desc">
-                            Her gün değişen sabit puzzle. Herkes aynı bulmacayı çözer!
-                        </p>
-                        <div className="daily-meta">
-                            {playCount !== null && (
-                                <span className="daily-meta-item">👥 {playCount.toLocaleString('tr-TR')} oynadı</span>
-                            )}
-                            {playCount !== null && <span className="daily-meta-sep">·</span>}
-                            <span className="daily-meta-item">⏰ {countdown}</span>
-                        </div>
+                        {dailyCompleted ? (
+                            /* Tamamlandıysa geri sayım göster */
+                            <div style={{ marginTop: '0.5rem' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                    Yeni bulmacaya kalan
+                                </div>
+                                <div style={{
+                                    fontFamily: 'var(--font-display)',
+                                    fontSize: '1.4rem',
+                                    fontWeight: 900,
+                                    color: 'var(--color-magenta)',
+                                    letterSpacing: '0.08em',
+                                    filter: 'drop-shadow(0 0 8px rgba(232,121,249,0.5))',
+                                }}>
+                                    {countdown}
+                                </div>
+                            </div>
+                        ) : (
+                            <>
+                                <p className="mode-desc">
+                                    Her gün değişen sabit puzzle. Herkes aynı bulmacayı çözer!
+                                </p>
+                                <div className="daily-meta">
+                                    {playCount !== null && (
+                                        <span className="daily-meta-item">👥 {playCount.toLocaleString('tr-TR')} oynadı</span>
+                                    )}
+                                    {playCount !== null && <span className="daily-meta-sep">·</span>}
+                                    <span className="daily-meta-item">⏰ {countdown}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
                     <span className="badge">{dailyCompleted ? 'Bitti' : 'Oyna'}</span>
                 </Link>
