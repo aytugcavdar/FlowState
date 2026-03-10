@@ -109,8 +109,8 @@ export class LevelGenerator {
 
   generate(config: GeneratorConfig): PuzzleDefinition {
     if (this.strategy) return this.strategy.generate(config);
-    // Zorluk 5'ten büyükse %50 ihtimalle veya 10'dan büyükse her zaman multi-color üret
-    const useMulti = config.difficulty >= 10 || (config.difficulty >= 5 && Math.random() > 0.5);
+    // Zorluk 3'ten büyükse %70, 6'dan büyükse her zaman multi-color üret
+    const useMulti = config.difficulty >= 6 || (config.difficulty >= 3 && Math.random() > 0.3);
     
     if (useMulti) {
        const multiResult = LevelGenerator.generateMultiColorWalk(config);
@@ -522,7 +522,7 @@ export class LevelGenerator {
           // Yol dışı — dekoratif dolgu tile
           let fillTypes: TileType[] = ['STRAIGHT', 'ELBOW'];
           if (difficulty >= 3 && difficulty < 6) fillTypes.push('T_JUNCTION');
-          if (difficulty >= 6) fillTypes.push('T_JUNCTION', 'CROSS', 'MIXER');
+          if (difficulty >= 6) fillTypes.push('T_JUNCTION', 'CROSS');
           tileRow.push({ type: randomItem(fillTypes), rotation: randomRotation() });
         }
       }
