@@ -366,7 +366,7 @@ export class LevelGenerator {
             // Tüm yolları birleştir ve bulmaca oluştur
             const fullPath = [...pathA, ...pathB.slice(0, -1)]; // mixerPos ortak, duplicate etme
             return LevelGenerator.buildMultiPuzzleFromPath(
-               gridSize, fullPath, portMap, sourceA, sourceB, mixerPos, sinkPos
+               gridSize, fullPath, pathA, portMap, sourceA, sourceB, mixerPos, sinkPos
             );
         }
       }
@@ -541,6 +541,7 @@ export class LevelGenerator {
   private static buildMultiPuzzleFromPath(
     gridSize: number,
     path: { row: number; col: number }[],
+    pathA: { row: number; col: number }[],
     portMap: Map<string, Dir[]>,
     sourceA: { row: number; col: number },
     sourceB: { row: number; col: number },
@@ -569,13 +570,31 @@ export class LevelGenerator {
           const importDir = ports[0] || 'W';
           tileRow.push({ type: 'SINK', rotation: importDir === 'N' ? 90 : importDir === 'E' ? 180 : importDir === 'S' ? 270 : 0, locked: true });
         } else if (row === mixerPos.row && col === mixerPos.col) {
-          // MIXER ports are W, E, S (base rotation 0 means IN:W, E; OUT:S)
-          // To deduce rotation precisely requires knowing which ports are IN vs OUT.
-          // For now, let random rotation scramble handle finding the correct rotation during play,
-          // but we MUST provide a valid MIXER.
-          // T_JUNCTION has 3 ports. MIXER has 3 ports.
-          const { rotation } = tileForPorts(ports);
-          tileRow.push({ type: 'MIXER', rotation });
+          // MIXER base ports: W (input), E (input), S (output at 0°)
+          // ports[] contains 3 directions: 2 inputs (from pathA and pathB) and 1 output (toward sink).
+          // Output direction = theone continuing pathA toward SINK (second port added by pathA walk).
+          // We need to rotate MIXER so base S → output direction.
+          // 
+          // Find the output port: it's the port in pathA that goes from mixerPos toward the next tile.
+          const mixerIdx = pathA.findIndex(p => p.row === mixerPos.row && p.col === mixerPos.col);
+          let outputDir: Dir = 'S'; // fallback
+          if (mixerIdx >= 0 && mixerIdx < pathA.length - 1) {
+            const next = pathA[mixerIdx + 1];
+            const dr = next.row - mixerPos.row;
+            const dc = next.col - mixerPos.col;
+            if (dr === -1) outputDir = 'N';
+            else if (dr === 1) outputDir = 'S';
+            else if (dc === -1) outputDir = 'W';
+            else if (dc === 1) outputDir = 'E';
+          }
+          // Rotate MIXER so base-S aligns with outputDir
+          // Base S → N needs 180°, S → E needs 270°, S → W needs 90°, S → S needs 0°
+          let mixerRot: Rotation = 0;
+          if (outputDir === 'N') mixerRot = 180;
+          else if (outputDir === 'E') mixerRot = 270;
+          else if (outputDir === 'W') mixerRot = 90;
+          // outputDir === 'S' stays 0
+          tileRow.push({ type: 'MIXER', rotation: mixerRot, locked: true });
         } else if (pathSet.has(key)) {
           const { type, rotation } = tileForPorts(ports);
           tileRow.push({ type, rotation });
