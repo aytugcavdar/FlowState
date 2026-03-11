@@ -32,16 +32,16 @@ describe('FlowColor', () => {
       expect(mixColors(['cyan', 'cyan'])).toBe('cyan');
     });
 
-    it('cyan + magenta = white', () => {
-      expect(mixColors(['cyan', 'magenta'])).toBe('white');
+    it('cyan + magenta = purple', () => {
+      expect(mixColors(['cyan', 'magenta'])).toBe('purple');
     });
 
-    it('cyan + yellow = white', () => {
-      expect(mixColors(['cyan', 'yellow'])).toBe('white');
+    it('cyan + yellow = green', () => {
+      expect(mixColors(['cyan', 'yellow'])).toBe('green');
     });
 
-    it('magenta + yellow = white', () => {
-      expect(mixColors(['magenta', 'yellow'])).toBe('white');
+    it('magenta + yellow = orange', () => {
+      expect(mixColors(['magenta', 'yellow'])).toBe('orange');
     });
 
     it('üç renk karışımı white', () => {
