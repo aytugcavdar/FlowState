@@ -56,8 +56,6 @@ export function GameBoard() {
     const useHint = useGameStore(s => s.useHint);
     const tick = useGameStore(s => s.tick);
     const startPractice = useGameStore(s => s.startPractice);
-    const startCampaignLevel = useGameStore(s => s.startCampaignLevel);
-    const startTutorialLevel = useGameStore(s => s.startTutorialLevel);
     const currentPuzzleId = useGameStore(s => s.currentPuzzleId);
     const isTutorial = useGameStore(s => s.isTutorial);
     const tutorialStep = useGameStore(s => s.tutorialStep);
@@ -69,7 +67,6 @@ export function GameBoard() {
     const { playRotate, playWin, playClick } = useSound();
     const haptic = useHaptic();
     const [clickedTile, setClickedTile] = useState<ClickedTile | null>(null);
-    const [copyDone, setCopyDone] = useState(false);
     const prevSolved = useRef(false);
 
     // Dynamic grid size

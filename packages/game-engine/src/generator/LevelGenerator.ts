@@ -112,11 +112,11 @@ export class LevelGenerator {
   generate(config: GeneratorConfig): PuzzleDefinition {
     if (this.strategy) return this.strategy.generate(config);
     
-    // ─── DÜZELTME: Daha fazla multi-color puzzle ───
-    // Zorluk 3'ten büyükse %70, 5'ten büyükse %90, 7'den büyükse her zaman multi-color üret
+    // ─── DÜZELTME: MIXER frekansını artır ───
+    // Zorluk 2'den itibaren MIXER şansı var, 4+ için %100
     const multiChance = config.difficulty >= 7 ? 1.0 : 
-                        config.difficulty >= 5 ? 0.9 : 
-                        config.difficulty >= 3 ? 0.7 : 0.3;
+                        config.difficulty >= 4 ? 1.0 : 
+                        config.difficulty >= 2 ? 0.8 : 0.4;
     const useMulti = Math.random() < multiChance;
     
     if (useMulti) {
@@ -221,29 +221,29 @@ export class LevelGenerator {
     const sourceDir: Dir = sourceEdge === 'left' ? 'E' : 'S';
     portMap.set(`${current.row},${current.col}`, [sourceDir]);
 
-    // ─── DÜZELTME: Daha dengeli path length hesaplaması ───
-    // Minimum path length: gridSize'ın karesinin %30'u (daha kısa ama tutarlı)
+    // ─── DÜZELTME: Daha kısa path, daha fazla decoy tile ───
+    // Minimum path length: gridSize'ın karesinin %25'i (çok kısa, çok decoy)
     const totalCells = gridSize * gridSize;
-    let minPathLength = Math.floor(totalCells * 0.3);
+    let minPathLength = Math.floor(totalCells * 0.25);
     
-    // Küçük ızgaralarda biraz daha uzun
+    // Küçük ızgaralarda biraz daha uzun (yoksa çok kolay)
     if (gridSize <= 5) {
-      minPathLength = Math.floor(totalCells * 0.45); // %45 hücreyi kullan
-    } else if (gridSize === 6) {
       minPathLength = Math.floor(totalCells * 0.35); // %35 hücreyi kullan
+    } else if (gridSize === 6) {
+      minPathLength = Math.floor(totalCells * 0.30); // %30 hücreyi kullan
     }
     
-    // Zorluk ile yol karmaşıklığı - daha dengeli
-    const maxPathLength = totalCells - 2;
+    // Zorluk ile yol karmaşıklığı - çok az artış
+    const maxPathLength = Math.floor(totalCells * 0.6); // Maksimum %60
     
-    // Difficulty her seviye için path'e ekstra hücre ekler (daha az agresif)
+    // Difficulty her seviye için path'e ekstra hücre ekler (minimal)
     let difficultyBonus = 0;
     if (gridSize <= 5) {
-      difficultyBonus = Math.floor(difficulty * 1.5); // Küçük ızgaralarda her difficulty +1.5 hücre
+      difficultyBonus = Math.floor(difficulty * 1); // Küçük ızgaralarda her difficulty +1 hücre
     } else if (gridSize <= 7) {
-      difficultyBonus = Math.floor(difficulty * 2); // Orta ızgaralarda her difficulty +2 hücre
+      difficultyBonus = Math.floor(difficulty * 1.5); // Orta ızgaralarda her difficulty +1.5 hücre
     } else {
-      difficultyBonus = Math.floor(difficulty * 2.5); // Büyük ızgaralarda her difficulty +2.5 hücre
+      difficultyBonus = Math.floor(difficulty * 2); // Büyük ızgaralarda her difficulty +2 hücre
     }
     
     const targetLength = Math.min(maxPathLength, minPathLength + difficultyBonus);
@@ -867,8 +867,23 @@ export class LevelGenerator {
   private static scrambleRotations(puzzle: PuzzleDefinition): PuzzleDefinition {
     const scrambledTiles = puzzle.tiles.map(row =>
       row.map(tile => {
+        // Sadece SOURCE ve SINK locked kalmalı
         if (tile.locked) return { ...tile, solutionRotation: tile.rotation };
-        return { ...tile, solutionRotation: tile.rotation, rotation: randomRotation() };
+        
+        // Diğer tüm tile'lar (path dahil) rastgele rotasyonda başlasın
+        const solutionRot = tile.rotation;
+        const possibleRotations: Rotation[] = [0, 90, 180, 270];
+        
+        // %75 ihtimalle yanlış rotasyonda başla (daha zor)
+        let startRot: Rotation;
+        if (Math.random() < 0.75) {
+          const wrongRotations = possibleRotations.filter(r => r !== solutionRot);
+          startRot = randomItem(wrongRotations);
+        } else {
+          startRot = solutionRot; // %25 ihtimalle doğru rotasyonda
+        }
+        
+        return { ...tile, solutionRotation: solutionRot, rotation: startRot };
       })
     );
     return { ...puzzle, tiles: scrambledTiles };
