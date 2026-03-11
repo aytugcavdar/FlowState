@@ -10,20 +10,32 @@ export const FLOW_COLORS: FlowColor[] = ['cyan', 'magenta', 'yellow', 'white'];
 
 /**
  * İki rengi karıştırma kuralları.
- * MVP'de tüm ikili karışımlar beyaz üretir.
- * v2.0'da kısmi karışım (cyan+magenta=blue vb.) eklenecek.
+ * Gerçek renk karışımı: cyan+magenta=purple, cyan+yellow=green, magenta+yellow=orange
  */
 const COLOR_MIX_MAP: Record<string, FlowColor> = {
-  // İkili karışımlar — MVP kuralı: Hepsi beyaz
-  'cyan+magenta':          'white',
-  'cyan+yellow':           'white',
-  'magenta+yellow':        'white',
+  // İkili karışımlar — Gerçek renk teorisi
+  'cyan+magenta':          'purple',
+  'cyan+yellow':           'green',
+  'magenta+yellow':        'orange',
   // Üçlü karışım
   'cyan+magenta+yellow':   'white',
   // Karışımlara beyaz eklenmesi
   'cyan+magenta+white':    'white',
   'cyan+white+yellow':     'white',
   'magenta+white+yellow':  'white',
+  // İkincil renklerin karışımları
+  'cyan+purple':           'white',
+  'cyan+green':            'white',
+  'cyan+orange':           'white',
+  'magenta+purple':        'white',
+  'magenta+green':         'white',
+  'magenta+orange':        'white',
+  'yellow+purple':         'white',
+  'yellow+green':          'white',
+  'yellow+orange':         'white',
+  'green+orange':          'white',
+  'green+purple':          'white',
+  'orange+purple':         'white',
 };
 
 /**

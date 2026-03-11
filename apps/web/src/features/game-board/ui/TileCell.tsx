@@ -2,6 +2,7 @@
 // TileCell — Tek bir oyun tahtası hücresi
 // React.memo ile optimize edilmiş, kendi görsel döndürme
 // state'ini yönetir.
+// ─── YENİ: Swipe gesture desteği eklendi ───
 // ============================================================
 
 import { memo, useEffect, useRef, useState } from 'react';
@@ -36,6 +37,11 @@ export const TileCell = memo(function TileCell({
 }: TileCellProps) {
     const [visualRotation, setVisualRotation] = useState(rotation);
     const prevRotation = useRef(rotation);
+    
+    // ─── Swipe Gesture State ───
+    const touchStartX = useRef<number>(0);
+    const touchStartY = useRef<number>(0);
+    const touchStartTime = useRef<number>(0);
 
     useEffect(() => {
         if (rotation !== prevRotation.current) {
@@ -50,10 +56,51 @@ export const TileCell = memo(function TileCell({
         }
     }, [rotation]);
 
+    // ─── Swipe Gesture Handlers ───
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (locked) return;
+        const touch = e.touches[0];
+        touchStartX.current = touch.clientX;
+        touchStartY.current = touch.clientY;
+        touchStartTime.current = Date.now();
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (locked) return;
+        
+        const touch = e.changedTouches[0];
+        const deltaX = touch.clientX - touchStartX.current;
+        const deltaY = touch.clientY - touchStartY.current;
+        const deltaTime = Date.now() - touchStartTime.current;
+        
+        // Swipe detection: minimum 30px movement, max 300ms duration
+        const minSwipeDistance = 30;
+        const maxSwipeTime = 300;
+        
+        if (deltaTime > maxSwipeTime) {
+            // Too slow, treat as tap
+            return;
+        }
+        
+        const absX = Math.abs(deltaX);
+        const absY = Math.abs(deltaY);
+        
+        // Horizontal or vertical swipe?
+        if (absX > minSwipeDistance || absY > minSwipeDistance) {
+            // Prevent default tap behavior
+            e.preventDefault();
+            
+            // Trigger rotation
+            onClick();
+        }
+    };
+
     return (
         <button
             className={`tile-cell ${locked ? 'locked' : ''} ${isHinted ? 'hinted' : ''} ${flowColor ? 'has-flow flow-' + flowColor : ''} ${justClicked ? 'just-clicked' : ''} ${isKeyboardSelected ? 'keyboard-selected' : ''}`}
             onClick={onClick}
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
             disabled={locked}
             data-testid={`tile-${row}-${col}`}
             data-rotation={rotation}

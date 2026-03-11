@@ -37,16 +37,31 @@ export interface MetaStats {
     // Rekorlar: [mode: string] -> { bestTimeSec: number, bestMoves: number }
     // mode formatı: "daily", "practice-5x5", "practice-7x7" vs.
     records: Record<string, { bestTimeSec: number; bestMoves: number }>;
+    
+    // Gelişim grafiği: son 30 günün çözüm sayıları
+    // Format: { "2026-03-11": 5, "2026-03-12": 3, ... }
+    dailyProgress: Record<string, number>;
 }
 
 export interface MetaStoreState {
     unlockedAchievements: string[];
     xp: number;
+    coins: number; // ← Coins artık burada (tek kaynak)
     stats: MetaStats;
     /** Günlük bulmacayı son tamamlama tarihi (YYYY-MM-DD) */
     lastDailyCompletedDate: string | null;
+    /** Pratik modda son seçilen zorluk seviyesi */
+    lastPracticeDifficulty: number;
+    /** Haftalık challenge durumu */
+    weeklyChallenge: {
+        weekId: string; // "2026-W11" formatında
+        progress: number; // 0-7 arası tamamlanan gün sayısı
+        completed: boolean;
+    } | null;
 
     // Actions
+    addCoins: (amount: number) => void;
+    spendCoins: (amount: number) => void;
     recordSolve: (params: { seconds: number, moves: number, usedHints: boolean, isPerfect: boolean, gridSize: number, campaignLevelId?: number, isDaily?: boolean }) => {
         isNewRecordTime: boolean;
         isNewRecordMoves: boolean;
@@ -55,6 +70,8 @@ export interface MetaStoreState {
     };
     checkAchievements: () => string[];
     markDailyCompleted: () => void;
+    setLastPracticeDifficulty: (difficulty: number) => void;
+    updateWeeklyChallenge: () => void;
 }
 
 const INITIAL_STATS: MetaStats = {
@@ -66,23 +83,94 @@ const INITIAL_STATS: MetaStats = {
     currentStreak: 0,
     lastSolveDate: null,
     records: {},
+    dailyProgress: {},
 };
+
+/** Haftanın ID'sini hesapla (ISO 8601 hafta numarası) */
+function getWeekId(): string {
+    const now = new Date();
+    const year = now.getFullYear();
+    const startOfYear = new Date(year, 0, 1);
+    const days = Math.floor((now.getTime() - startOfYear.getTime()) / (24 * 60 * 60 * 1000));
+    const weekNumber = Math.ceil((days + startOfYear.getDay() + 1) / 7);
+    return `${year}-W${String(weekNumber).padStart(2, '0')}`;
+}
 
 export const useMetaStore = create<MetaStoreState>()(
     persist(
         (set, get) => ({
         unlockedAchievements: [],
             xp: 0,
+            coins: 100, // Başlangıç hediyesi
             stats: INITIAL_STATS,
             lastDailyCompletedDate: null,
+            lastPracticeDifficulty: 3, // Varsayılan zorluk
+            weeklyChallenge: null,
+
+            addCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins + amount) })),
+            spendCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins - amount) })),
+            
+            setLastPracticeDifficulty: (difficulty) => set({ lastPracticeDifficulty: difficulty }),
+
+            updateWeeklyChallenge: () => {
+                const currentWeekId = getWeekId();
+                const today = new Date().toISOString().slice(0, 10);
+                
+                set((state) => {
+                    const challenge = state.weeklyChallenge;
+                    
+                    // Yeni hafta başladıysa sıfırla
+                    if (!challenge || challenge.weekId !== currentWeekId) {
+                        return {
+                            weeklyChallenge: {
+                                weekId: currentWeekId,
+                                progress: 1, // Bugün tamamlandı
+                                completed: false,
+                            }
+                        };
+                    }
+                    
+                    // Bugün zaten sayıldıysa (aynı gün birden fazla günlük tamamlama), artırma
+                    if (state.lastDailyCompletedDate === today && challenge.progress > 0) {
+                        return {}; // Değişiklik yok
+                    }
+                    
+                    // Aynı haftadaysa progress artır
+                    const newProgress = Math.min(7, challenge.progress + 1);
+                    const isCompleted = newProgress >= 7;
+                    
+                    // 7 gün tamamlandıysa ödül ver
+                    if (isCompleted && !challenge.completed) {
+                        return {
+                            weeklyChallenge: {
+                                ...challenge,
+                                progress: newProgress,
+                                completed: true,
+                            },
+                            xp: state.xp + 500,
+                            coins: state.coins + 250,
+                        };
+                    }
+                    
+                    return {
+                        weeklyChallenge: {
+                            ...challenge,
+                            progress: newProgress,
+                        }
+                    };
+                });
+            },
 
             markDailyCompleted: () => {
                 const today = new Date().toISOString().slice(0, 10);
                 set({ lastDailyCompletedDate: today });
+                // Günlük tamamlandığında haftalık challenge'ı güncelle
+                get().updateWeeklyChallenge();
             },
 
             recordSolve: ({ seconds, moves, usedHints, isPerfect, gridSize, campaignLevelId, isDaily }) => {
                 const today = new Date().toDateString();
+                const todayISO = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
                 let result = { isNewRecordTime: false, isNewRecordMoves: false, bestTimeSec: seconds, bestMoves: moves };
 
                 set((state) => {
@@ -95,6 +183,18 @@ export const useMetaStore = create<MetaStoreState>()(
                     if (campaignLevelId && campaignLevelId > stats.highestCampaignLevel) {
                         stats.highestCampaignLevel = campaignLevelId;
                     }
+
+                    // Günlük gelişim grafiği güncelle
+                    if (!stats.dailyProgress) stats.dailyProgress = {};
+                    stats.dailyProgress[todayISO] = (stats.dailyProgress[todayISO] || 0) + 1;
+                    
+                    // Son 30 günü tut, eskilerini sil
+                    const thirtyDaysAgo = new Date();
+                    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                    const cutoffDate = thirtyDaysAgo.toISOString().slice(0, 10);
+                    Object.keys(stats.dailyProgress).forEach(date => {
+                        if (date < cutoffDate) delete stats.dailyProgress[date];
+                    });
 
                     // Rekor hesaplama
                     const modeKey = isDaily ? 'daily' : (campaignLevelId ? `campaign-${campaignLevelId}` : `practice-${gridSize}x${gridSize}`);
@@ -193,14 +293,14 @@ export const useMetaStore = create<MetaStoreState>()(
                 if (newlyUnlocked.length > 0) {
                     set(state => ({
                         unlockedAchievements: [...state.unlockedAchievements, ...newlyUnlocked],
-                        xp: state.xp + gainedXp
+                        xp: state.xp + gainedXp,
+                        coins: state.coins + gainedCoins, // Coins artık metaStore'da
                     }));
 
-                    // We also need to add coins to gameStore, which we can do by importing it later or dispatching an event
-                    // For now, doing it via a custom event or letting gameStore subscribe to metaStore.
+                    // Başarım kutlama eventi
                     if (typeof window !== 'undefined') {
                         window.dispatchEvent(new CustomEvent('achievements-unlocked', { 
-                            detail: { newlyUnlocked, gainedCoins } 
+                            detail: { achievements: newlyUnlocked, gainedXp, gainedCoins } 
                         }));
                     }
                 }

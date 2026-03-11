@@ -23,7 +23,14 @@ export function Layout() {
     const xpProgress = Math.min(100, (xp / xpForNextLevel) * 100);
 
     /** Aktif link kontrolü */
-    const isActive = (path: string) => location.pathname === path;
+    const isActive = (path: string) => {
+        // Kampanya modundan /play'e gidildiyse, sadece /campaign aktif olmalı
+        const fromCampaign = (location.state as any)?.fromCampaign === true;
+        if (fromCampaign && location.pathname === '/play') {
+            return path === '/campaign';
+        }
+        return location.pathname === path;
+    };
 
     const activeTheme = useThemeStore(s => s.activeTheme);
 

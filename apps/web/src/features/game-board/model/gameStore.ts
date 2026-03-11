@@ -85,9 +85,7 @@ interface GameState {
   /** Oyunu sıfırla */
   reset: () => void;
   
-  // ─── Ekonomi & İlerleme ─────────────────────────────────
-  coins: number;
-  addCoins: (amount: number) => void;
+  // ─── İlerleme ───────────────────────────────────────────
   unlockedLevel: number; // Saga Map'teki açık olan en yüksek seviye
 }
 
@@ -111,8 +109,6 @@ export const useGameStore = create<GameState>()(
       currentDifficulty: null,
       isTutorial: false,
       tutorialStep: null,
-      coins: 100, // Baslangic hediyesi veya localStorage'dan yuklenebilir
-      addCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins + amount) })),
       unlockedLevel: 1, // Baslangicta kilidi acik seviye
 
       // ─── Puzzle Başlat ────────────────────────────────────
@@ -182,16 +178,20 @@ export const useGameStore = create<GameState>()(
         const gridSize = levelConfig.gridSize;
         const difficulty = levelConfig.difficulty;
 
-        // LevelGenerator'a seed'i geçemiyoruz ama rng'yi warm-up yaparak
-        // her koşuda aynı başlangıç noktasına getiriyoruz (global Math.random etkisini törpülemek için)
-        for (let i = 0; i < 10; i++) rng(); // warm-up
-
+        // ─── DÜZELTME: Math.random'u override et (günlük gibi) ───
         const generator = new LevelGenerator();
-        const definition = generator.generate({
-          gridSize,
-          difficulty,
-          maxAttempts: 500,
-        });
+        const originalRandom = Math.random;
+        Math.random = rng;
+        let definition;
+        try {
+            definition = generator.generate({
+              gridSize,
+              difficulty,
+              maxAttempts: 500,
+            });
+        } finally {
+            Math.random = originalRandom;
+        }
 
         get().startPuzzle(definition, `campaign-${levelId}`, difficulty);
       },
@@ -232,11 +232,11 @@ export const useGameStore = create<GameState>()(
           const isNewlySolved = !state.solved && validation.solved;
           
           let newUnlockedLevel = state.unlockedLevel;
-          let newCoins = state.coins;
           let stars: 0 | 1 | 2 | 3 = 0; // Çözüm olmadıysa 0
 
           if (isNewlySolved) {
-            newCoins += 50; // Standart odul
+            // Standart ödül metaStore'a ekle
+            useMetaStore.getState().addCoins(50);
             
             // Eger bu bir kampanya leveliyse ve son level cozulduyse, sonrakini ac
             let campaignLvlId: number | undefined;
@@ -247,7 +247,7 @@ export const useGameStore = create<GameState>()(
                    // Ekstra kampanya puani/coin
                    const levelConfig = CAMPAIGN_LEVELS.find(l => l.id === campaignLvlId);
                    if (levelConfig) {
-                       newCoins += levelConfig.pointsReward;
+                       useMetaStore.getState().addCoins(levelConfig.pointsReward);
                    }
                }
             }
@@ -282,7 +282,6 @@ export const useGameStore = create<GameState>()(
             status: validation.solved ? 'solved' : state.status,
             moveCount: state.moveCount + 1,
             undoStack: [...state.undoStack.slice(-49), snapshot], // Max 50
-            coins: newCoins,
             unlockedLevel: newUnlockedLevel,
             ...(isNewlySolved && { lastStars: stars }),
           };
@@ -404,7 +403,6 @@ export const useGameStore = create<GameState>()(
         }
 
         return { 
-          coins: state.coins, 
           unlockedLevel: state.unlockedLevel,
           
           // Oyun resume verileri (günlük olmayanlar)

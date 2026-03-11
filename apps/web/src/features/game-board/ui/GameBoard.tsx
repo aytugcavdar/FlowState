@@ -9,16 +9,18 @@
 // ============================================================
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useGameStore } from '../model/gameStore';
 import { useThemeStore } from '../model/themeStore';
+import { useMetaStore } from '@/features/meta/model/metaStore';
 import { TileCell } from './TileCell';
 import { FlowOverlay } from './FlowOverlay';
+import { WinModal } from './WinModal';
 import { useSound } from '@/shared/hooks/useSound';
 import { useHaptic } from '@/shared/hooks/useHaptic';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { useGameTimer } from '../hooks/useGameTimer';
 import { useGameMode } from '../hooks/useGameMode';
-import { useMetaStore } from '../../meta/model/metaStore';
 import { TUTORIAL_LEVELS } from '@flowstate/game-engine';
 import './GameBoard.css';
 
@@ -38,6 +40,9 @@ interface ClickedTile {
 
 /** Ana oyun tahtası bileşeni */
 export function GameBoard() {
+    const location = useLocation();
+    const isTimeAttack = location.pathname === '/timeattack';
+    
     const board = useGameStore(s => s.board);
     const gridSize = useGameStore(s => s.gridSize);
     const flowResult = useGameStore(s => s.flowResult);
@@ -147,6 +152,22 @@ export function GameBoard() {
 
     return (
         <div className="game-board-container animate-fade-in" id="game-board-container">
+            {/* ─── iOS Haptic Uyarısı ─────────────────────────────── */}
+            {haptic.isIOSWithoutVibrate && (
+                <div style={{
+                    background: 'rgba(251, 191, 36, 0.15)',
+                    border: '1px solid rgb(251, 191, 36)',
+                    padding: '8px 16px',
+                    borderRadius: 'var(--radius-md)',
+                    marginBottom: '12px',
+                    fontSize: '0.85rem',
+                    color: 'rgb(251, 191, 36)',
+                    textAlign: 'center',
+                }}>
+                    ⚠️ iOS cihazlarda titreşim geri bildirimi desteklenmiyor
+                </div>
+            )}
+
             {/* ─── İstatistik Çubuğu ─────────────────────────────── */}
             <div className="game-stats glass-panel" id="game-stats">
                 <div className="game-stat">
@@ -272,7 +293,9 @@ export function GameBoard() {
                             className="btn"
                             onClick={() => {
                                 playClick();
-                                startPractice(gridSize, 3);
+                                // Son seçilen zorluğu kullan
+                                const lastDifficulty = useMetaStore.getState().lastPracticeDifficulty;
+                                startPractice(gridSize, lastDifficulty);
                             }}
                             id="btn-new-puzzle"
                         >
@@ -283,139 +306,8 @@ export function GameBoard() {
             </div>
 
             {/* ─── Kazanma Modalı ────────────────────────────────── */}
-            {solved && (
-                <div className="win-overlay" role="dialog" aria-label="Puzzle Solved" id="win-modal">
-                    <div className="win-modal glass-panel animate-fade-in">
-                        <div className="confetti-container">
-                            {Array.from({ length: 12 }).map((_, i) => (
-                                <span
-                                    key={i}
-                                    className="confetti-piece"
-                                    style={{
-                                        left: `${10 + Math.random() * 80}%`,
-                                        animationDelay: `${Math.random() * 0.5}s`,
-                                        backgroundColor: ['#22d3ee', '#e879f9', '#facc15', '#22c55e', '#f97316'][i % 5],
-                                    }}
-                                />
-                            ))}
-                        </div>
-                        <h2 className="win-title">🎉 Tebrikler!</h2>
-                        <p className="win-subtitle">Bulmacayı çözdün!</p>
-
-                        {/* ─── Yeni Rekor Gösterimi ───────────────────── */}
-                        {(() => {
-                            const modeKey = isDaily ? 'daily' : (currentPuzzleId?.startsWith('campaign-') ? currentPuzzleId : `practice-${gridSize}x${gridSize}`);
-                            const record = useMetaStore.getState().stats.records?.[modeKey];
-                            const isNewTime = record?.bestTimeSec === elapsedSeconds;
-                            const isNewMoves = record?.bestMoves === moveCount;
-
-                            return (
-                                <div className="win-stats" style={{ flexDirection: 'column', gap: '8px', padding: '16px' }}>
-                                    <div className="win-stat" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'row' }}>
-                                        <span className="win-stat-label">Süre</span>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div className="win-stat-value">
-                                                {formatTime(elapsedSeconds)}
-                                                {isNewTime && <span style={{ fontSize: '0.6rem', color: 'var(--color-yellow)', marginLeft: '8px', verticalAlign: 'middle', border: '1px solid var(--color-yellow)', padding: '2px 4px', borderRadius: '4px' }}>YENİ REKOR</span>}
-                                            </div>
-                                            {!isNewTime && record && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rekor: {formatTime(record.bestTimeSec)}</div>}
-                                        </div>
-                                    </div>
-                                    <div className="win-stat" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'row' }}>
-                                        <span className="win-stat-label">Hamle</span>
-                                        <div style={{ textAlign: 'right' }}>
-                                            <div className="win-stat-value">
-                                                {moveCount}
-                                                {isNewMoves && <span style={{ fontSize: '0.6rem', color: 'var(--color-yellow)', marginLeft: '8px', verticalAlign: 'middle', border: '1px solid var(--color-yellow)', padding: '2px 4px', borderRadius: '4px' }}>YENİ REKOR</span>}
-                                            </div>
-                                            {!isNewMoves && record && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Rekor: {record.bestMoves}</div>}
-                                        </div>
-                                    </div>
-                                    <div className="win-stat" style={{ width: '100%', justifyContent: 'space-between', flexDirection: 'row' }}>
-                                        <span className="win-stat-label">XP</span>
-                                        <span className="win-stat-value xp-reward">+{50 + gridSize * 5}</span>
-                                    </div>
-                                </div>
-                            );
-                        })()}
-                        <div className="win-actions">
-                            {isTutorial ? (
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => {
-                                        playClick();
-                                        if (tutorialStep !== null && tutorialStep < TUTORIAL_LEVELS.length - 1) {
-                                            startTutorialLevel(tutorialStep + 1);
-                                        } else {
-                                            startPractice(5, 1);
-                                        }
-                                    }}
-                                    id="btn-next-tutorial"
-                                >
-                                    {tutorialStep !== null && tutorialStep < TUTORIAL_LEVELS.length - 1 ? '▶ Sonraki Aşama' : '▶ Eğitimi Bitir'}
-                                </button>
-                            ) : isDaily ? (
-                                /* Günlük modda sadece bilgi mesajı */
-                                <p style={{ color: 'var(--color-cyan)', fontSize: '0.9rem', textAlign: 'center', padding: '0.5rem' }}>
-                                    📅 Yarın yeni bulmaca seni bekliyor!
-                                </p>
-                            ) : (
-                                <button
-                                    className="btn btn-primary"
-                                    onClick={() => {
-                                        playClick();
-                                        if (currentPuzzleId?.startsWith('campaign-')) {
-                                            const currentLevelId = parseInt(currentPuzzleId.split('-')[1]);
-                                            const nextLevelId = currentLevelId + 1;
-                                            if (nextLevelId <= 100) {
-                                                startCampaignLevel(nextLevelId);
-                                            } else {
-                                                useGameStore.getState().reset();
-                                            }
-                                        } else {
-                                            startPractice(gridSize, 3);
-                                        }
-                                    }}
-                                    id="btn-play-again"
-                                >
-                                    {currentPuzzleId?.startsWith('campaign-') ? '▶ Sonraki Bölüm' : '▶ Sonraki Bulmaca'}
-                                </button>
-                            )}
-                            <button
-                                className="btn"
-                                onClick={() => {
-                                    const mins = Math.floor(elapsedSeconds / 60);
-                                    const secs = elapsedSeconds % 60;
-                                    const timeStr = mins > 0 ? `${mins}d ${secs}s` : `${secs}s`;
-                                    const dateStr = new Date().toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
-                                    const text = [
-                                        `⚡ FlowState — ${dateStr}`,
-                                        `⏱️ ${timeStr} · 🔄 ${moveCount} hamle · 📐 ${gridSize}×${gridSize}`,
-                                        `https://aytugcavdar.github.io/FlowState/`,
-                                    ].join('\n');
-                                    navigator.clipboard.writeText(text).then(() => {
-                                        setCopyDone(true);
-                                        setTimeout(() => setCopyDone(false), 2500);
-                                    });
-                                }}
-                                id="btn-share"
-                            >
-                                {copyDone ? '✅ Kopyalandı!' : '📤 Paylaş'}
-                            </button>
-                            <button
-                                className="btn"
-                                onClick={() => {
-                                    playClick();
-                                    useGameStore.getState().reset();
-                                }}
-                                id="btn-menu"
-                            >
-                                🏠 Menüye Dön
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* TimeAttack modunda WinModal gösterme */}
+            {!isTimeAttack && <WinModal />}
         </div>
     );
 }

@@ -50,19 +50,20 @@ export function TimeAttackPage() {
             setProcessedPuzzleId(currentPuzzleId);
             playWin();
 
-            // Sadece skoru artır (fonksiyonel update SAF OLMALIDIR)
-            setScore(prev => prev + 1);
+            // ─── DÜZELTME: Fonksiyonel update ile stale closure'dan kaçın ───
+            setScore(prevScore => {
+                const newScore = prevScore + 1;
+                const diff = Math.min(6, 2 + Math.floor(newScore / 3));
 
-            // Side-effect: setTimeout çağrısı fonksiyonel updatenin dışında kalmalı.
-            // Skoru prevScore + 1 olarak kendimiz de hesaplayabiliriz.
-            const newScore = score + 1;
-            const diff = Math.min(6, 2 + Math.floor(newScore / 3));
+                // Side-effect: setTimeout çağrısı
+                setTimeout(() => {
+                    startPractice(5, diff);
+                }, 600); // Küçük bir gecikme (animasyon görülmesi için)
 
-            setTimeout(() => {
-                startPractice(5, diff);
-            }, 600); // Küçük bir gecikme (animasyon görülmesi için)
+                return newScore;
+            });
         }
-    }, [solved, isPlaying, currentPuzzleId, processedPuzzleId, playWin, startPractice, score]);
+    }, [solved, isPlaying, currentPuzzleId, processedPuzzleId, playWin, startPractice]);
 
     // Oyunu terk ederken temizle
     useEffect(() => {

@@ -4,7 +4,6 @@
 // ============================================================
 
 import { useMetaStore } from '../features/meta/model/metaStore';
-import { useGameStore } from '../features/game-board/model/gameStore';
 import './StatsPage.css';
 
 function formatTime(seconds: number): string {
@@ -35,11 +34,56 @@ function StatCard({ icon, label, value, sub, highlight }: StatCardProps) {
     );
 }
 
+/** Gelişim grafiği bileşeni */
+function ProgressChart({ dailyProgress }: { dailyProgress: Record<string, number> }) {
+    // Son 14 günü göster
+    const days: { date: string; count: number; label: string }[] = [];
+    const today = new Date();
+    
+    for (let i = 13; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateStr = date.toISOString().slice(0, 10);
+        const dayLabel = date.toLocaleDateString('tr-TR', { weekday: 'short' });
+        days.push({
+            date: dateStr,
+            count: dailyProgress[dateStr] || 0,
+            label: dayLabel,
+        });
+    }
+
+    const maxCount = Math.max(...days.map(d => d.count), 1);
+
+    return (
+        <div className="progress-chart glass-panel">
+            <h3 className="chart-title">📈 Son 14 Gün</h3>
+            <div className="chart-bars">
+                {days.map(day => (
+                    <div key={day.date} className="chart-bar-wrapper">
+                        <div className="chart-bar-container">
+                            <div
+                                className="chart-bar"
+                                style={{
+                                    height: `${(day.count / maxCount) * 100}%`,
+                                    minHeight: day.count > 0 ? '4px' : '0',
+                                }}
+                                title={`${day.date}: ${day.count} çözüm`}
+                            />
+                        </div>
+                        <span className="chart-label">{day.label}</span>
+                        {day.count > 0 && <span className="chart-count">{day.count}</span>}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function StatsPage() {
     const stats = useMetaStore(s => s.stats);
     const xp = useMetaStore(s => s.xp);
+    const coins = useMetaStore(s => s.coins); // ← metaStore'dan al
     const unlockedAchievements = useMetaStore(s => s.unlockedAchievements);
-    const coins = useGameStore(s => s.coins);
 
     const hintFreeRate = stats.totalSolved > 0
         ? Math.round((stats.puzzlesWithoutHints / stats.totalSolved) * 100)
@@ -118,6 +162,11 @@ export function StatsPage() {
                     sub="en yüksek ulaşılan"
                 />
             </div>
+
+            {/* ─── Gelişim Grafiği ───────────────────────────── */}
+            {stats.totalSolved > 0 && stats.dailyProgress && Object.keys(stats.dailyProgress).length > 0 && (
+                <ProgressChart dailyProgress={stats.dailyProgress} />
+            )}
 
             {/* ─── Boş Durum ─────────────────────────────── */}
             {stats.totalSolved === 0 && (

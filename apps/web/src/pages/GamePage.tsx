@@ -119,8 +119,16 @@ function DailyCompletedScreen() {
 
 /** Pratik modu seçim paneli */
 function PracticeSetup({ onStart }: { onStart: (gridSize: number, difficulty: number) => void }) {
+    const lastPracticeDifficulty = useMetaStore(s => s.lastPracticeDifficulty);
+    const setLastPracticeDifficulty = useMetaStore(s => s.setLastPracticeDifficulty);
+    
     const [gridSize, setGridSize] = useState(7);
-    const [difficulty, setDifficulty] = useState(5);
+    const [difficulty, setDifficulty] = useState(lastPracticeDifficulty);
+
+    const handleStart = () => {
+        setLastPracticeDifficulty(difficulty);
+        onStart(gridSize, difficulty);
+    };
 
     return (
         <div className="practice-setup glass-panel neon-border" id="practice-setup">
@@ -150,7 +158,7 @@ function PracticeSetup({ onStart }: { onStart: (gridSize: number, difficulty: nu
             <button
                 className="btn btn-primary"
                 style={{ marginTop: '2rem', width: '100%' }}
-                onClick={() => onStart(gridSize, difficulty)}
+                onClick={handleStart}
                 id="btn-start-practice"
             >
                 ▶ Oyna

@@ -92,8 +92,7 @@ export function HomePage() {
     const stats = useMetaStore(s => s.stats);
     const xp = useMetaStore(s => s.xp);
     const dailyCompleted = useDailyCompleted();
-
-
+    const weeklyChallenge = useMetaStore(s => s.weeklyChallenge);
 
     const handleStartTutorial = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -158,6 +157,68 @@ export function HomePage() {
                         </span>
                         <span className="summary-label">En Hızlı</span>
                     </div>
+                </section>
+            )}
+
+            {/* ─── Haftalık Challenge ───────────────────────────── */}
+            {weeklyChallenge && (
+                <section className="weekly-challenge glass-panel" style={{
+                    borderColor: weeklyChallenge.completed ? 'rgba(34, 197, 94, 0.4)' : 'rgba(250, 204, 21, 0.4)',
+                    width: '100%',
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                        <span style={{ fontSize: '2rem' }}>{weeklyChallenge.completed ? '🏆' : '📅'}</span>
+                        <div style={{ flex: 1 }}>
+                            <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--color-yellow)' }}>
+                                Haftalık Challenge
+                            </h3>
+                            <p style={{ margin: '0.25rem 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                7 gün üst üste günlük bulmaca çöz
+                            </p>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-cyan)' }}>
+                                {weeklyChallenge.progress}/7
+                            </div>
+                            {weeklyChallenge.completed && (
+                                <div style={{ fontSize: '0.65rem', color: 'var(--color-green)', fontWeight: 700 }}>
+                                    ✓ TAMAMLANDI
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Progress bar */}
+                    <div style={{
+                        width: '100%',
+                        height: '8px',
+                        background: 'rgba(255,255,255,0.05)',
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                    }}>
+                        <div style={{
+                            width: `${(weeklyChallenge.progress / 7) * 100}%`,
+                            height: '100%',
+                            background: weeklyChallenge.completed 
+                                ? 'linear-gradient(to right, var(--color-green), var(--color-cyan))'
+                                : 'linear-gradient(to right, var(--color-yellow), var(--color-magenta))',
+                            transition: 'width 0.5s ease',
+                        }} />
+                    </div>
+                    
+                    {weeklyChallenge.completed && (
+                        <div style={{
+                            marginTop: '0.75rem',
+                            padding: '0.5rem',
+                            background: 'rgba(34, 197, 94, 0.1)',
+                            borderRadius: '0.5rem',
+                            fontSize: '0.75rem',
+                            color: 'var(--color-green)',
+                            textAlign: 'center',
+                        }}>
+                            🎉 +500 XP ve +250 Jeton kazandın!
+                        </div>
+                    )}
                 </section>
             )}
 

@@ -7,6 +7,7 @@
 import type { FlowColor, Direction } from '@flowstate/shared-types';
 import { Board } from '../board/Board';
 import { Position } from '../board/Position';
+import { mixColors } from './FlowColor';
 
 function rotateDir(dir: Direction, rotation: number): Direction {
   const map: Record<Direction, Direction> = { 'N': 'E', 'E': 'S', 'S': 'W', 'W': 'N' };
@@ -120,7 +121,9 @@ export class FlowCalculator {
         // ─── Karıştırma mantığı (MIXER) ───────────────────
         if (tile.type === 'MIXER') {
            if (colorsAtTile.length >= 2) {
-              outColor = 'white';
+              // Gerçek renk karışımını hesapla
+              const mixed = mixColors(colorsAtTile);
+              outColor = mixed ?? 'white'; // Fallback to white if mix fails
               // İlk rengin propagasyonunu zaten yaptık, şimdi karışmış rengi yeniden ilet
               shouldPropagate = true;
            } else {
@@ -198,7 +201,8 @@ export class FlowCalculator {
         const info = tileFlows.get(key);
         // Eğer MIXER ise karışmış rengi göster
         if (info && info.colors.length > 1) {
-           return 'white';
+           const mixed = mixColors(info.colors);
+           return mixed ?? 'white';
         }
         return info?.colors[info?.colors.length - 1] ?? null;
       },
