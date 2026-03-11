@@ -23,7 +23,7 @@ export { solvePuzzle, isSolvable } from './solver/PuzzleSolver';
 
 // ─── Generator Modülü ───────────────────────────────────────
 export { LevelGenerator } from './generator/LevelGenerator';
-export type { GeneratorConfig, GenerationStrategy } from './generator/LevelGenerator';
+export type { GeneratorConfig } from './generator/LevelGenerator';
 
 // ─── Campaign Modülü ─────────────────────────────────────────
 export { CAMPAIGN_LEVELS } from './campaign/CampaignConfig';

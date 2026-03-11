@@ -43,7 +43,8 @@ export function CampaignPage() {
         if (levelId > unlockedLevel) return;
         playClick();
         startCampaignLevel(levelId);
-        navigate('/play');
+        // Kampanya modunu belirtmek için state ile navigate
+        navigate('/play', { state: { fromCampaign: true } });
     };
 
     const totalCompleted = unlockedLevel - 1;

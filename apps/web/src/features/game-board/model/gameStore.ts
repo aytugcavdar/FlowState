@@ -142,7 +142,7 @@ export const useGameStore = create<GameState>()(
       // ─── Pratik Başlat ────────────────────────────────────
       startPractice: (gridSize, difficulty) => {
         const generator = new LevelGenerator();
-        const definition = generator.generate({ gridSize, difficulty });
+        const definition = generator.generate({ gridSize, difficulty, isPractice: true });
         get().startPuzzle(definition, `practice-${Date.now()}`, difficulty);
       },
 

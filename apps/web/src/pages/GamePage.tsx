@@ -120,7 +120,7 @@ function DailyCompletedScreen() {
 /** Pratik modu seçim paneli */
 function PracticeSetup({ onStart }: { onStart: (gridSize: number, difficulty: number) => void }) {
     const [gridSize, setGridSize] = useState(7);
-    const [difficulty, setDifficulty] = useState(4);
+    const [difficulty, setDifficulty] = useState(5);
 
     return (
         <div className="practice-setup glass-panel neon-border" id="practice-setup">
@@ -162,6 +162,8 @@ function PracticeSetup({ onStart }: { onStart: (gridSize: number, difficulty: nu
 export function GamePage() {
     const location = useLocation();
     const isPracticeRoute = location.pathname === '/practice';
+    // Kampanya sayfasından mı gelindi?
+    const fromCampaign = (location.state as any)?.fromCampaign === true;
 
     const status = useGameStore(s => s.status);
     const currentPuzzleId = useGameStore(s => s.currentPuzzleId);
@@ -177,6 +179,9 @@ export function GamePage() {
     const today = new Date().toISOString().slice(0, 10);
     const dailyAlreadySolved = lastDailyCompletedDate === today;
 
+    // Kampanya modu kontrolü
+    const isCampaignMode = currentPuzzleId?.startsWith('campaign-') || fromCampaign;
+
     // Günlük çözülünce metaStore'a kaydet
     useEffect(() => {
         if (status === 'solved' && currentPuzzleId === `daily-${today}` && !dailyAlreadySolved) {
@@ -185,21 +190,28 @@ export function GamePage() {
     }, [status, currentPuzzleId, today, dailyAlreadySolved, markDailyCompleted]);
 
     // Rota değiştiğinde board'ı sıfırla (daily ↔ practice arası geçiş)
+    // Kampanya modundaysa reset yapma
     useEffect(() => {
-        reset();
+        if (!isCampaignMode) {
+            reset();
+        }
     }, [isPracticeRoute]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // /play → günlük bulmaca (bugün çözülmediyse)
+    // Kampanya modundaysa günlük başlatma
     useEffect(() => {
-        if (!board && status === 'idle') {
+        if (!board && status === 'idle' && !isCampaignMode) {
             if (!isPracticeRoute && !dailyAlreadySolved) {
                 startDaily();
             }
         }
-    }, [board, status, isPracticeRoute, startDaily, dailyAlreadySolved]);
+    }, [board, status, isPracticeRoute, startDaily, dailyAlreadySolved, isCampaignMode]);
 
-    // Günlük zaten tamamlandıysa, kazanma ekranı kapatıldıktan sonra tamamlandı ekranı göster
-    if (!isPracticeRoute && dailyAlreadySolved && status !== 'playing' && status !== 'solved') {
+    // Günlük zaten tamamlandıysa VE campaign/practice değilse, kazanma ekranı kapatıldıktan sonra tamamlandı ekranı göster
+    const isCampaignOrPractice = currentPuzzleId?.startsWith('campaign-') || currentPuzzleId?.startsWith('practice-');
+    // Board varsa ve campaign/practice ise, günlük tamamlama ekranını gösterme
+    const shouldShowDailyCompleted = !isPracticeRoute && dailyAlreadySolved && !isCampaignOrPractice && status !== 'playing' && status !== 'solved' && !board;
+    if (shouldShowDailyCompleted) {
         return (
             <div className="game-page" id="game-page">
                 <div className="game-area">

@@ -21,6 +21,7 @@ export interface GeneratorConfig {
   difficulty: number;
   maxAttempts?: number;
   allowedTileTypes?: TileType[];
+  isPractice?: boolean;
 }
 
 /** Üretim stratejisi arayüzü */
