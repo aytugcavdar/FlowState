@@ -4,7 +4,7 @@
 // windowCustomEvent 'achievements-unlocked' dinlenir.
 // ============================================================
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ACHIEVEMENTS_DEF } from '../../features/meta/model/metaStore';
 import './AchievementToast.css';
 
@@ -20,11 +20,23 @@ export function AchievementToast() {
     const [queue, setQueue] = useState<ToastItem[]>([]);
     const [visible, setVisible] = useState<ToastItem | null>(null);
     const [exiting, setExiting] = useState(false);
+    
+    const toastRef = useRef<HTMLDivElement>(null);
+    const touchStartY = useRef(0);
+
+    const onTouchStart = (e: React.TouchEvent) => {
+        touchStartY.current = e.touches[0].clientY;
+    };
+
+    const onTouchEnd = (e: React.TouchEvent) => {
+        const delta = e.changedTouches[0].clientY - touchStartY.current;
+        if (delta > 40) dismiss(); // Aşağı swipe = dismiss
+    };
 
     // Dinle: metaStore yeni başarımları dispatch eder
     useEffect(() => {
         const handler = (e: Event) => {
-            const { newlyUnlocked } = (e as CustomEvent).detail;
+            const { achievements: newlyUnlocked } = (e as CustomEvent).detail;
             const items: ToastItem[] = (newlyUnlocked as string[])
                 .map(id => ACHIEVEMENTS_DEF.find(a => a.id === id))
                 .filter(Boolean)
@@ -66,7 +78,15 @@ export function AchievementToast() {
     if (!visible) return null;
 
     return (
-        <div className={`achievement-toast glass-panel ${exiting ? 'exiting' : ''}`} role="alert" id="achievement-toast" onClick={dismiss}>
+        <div 
+            className={`achievement-toast glass-panel ${exiting ? 'exiting' : ''}`} 
+            role="alert" 
+            id="achievement-toast" 
+            onClick={dismiss}
+            ref={toastRef} 
+            onTouchStart={onTouchStart} 
+            onTouchEnd={onTouchEnd}
+        >
             <div className="toast-icon animate-star">{visible.icon}</div>
             <div className="toast-body">
                 <div className="toast-title">🏆 Başarım Açıldı!</div>

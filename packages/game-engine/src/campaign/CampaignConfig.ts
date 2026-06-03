@@ -1,58 +1,47 @@
-import { CampaignLevel } from '@flowstate/shared-types';
+import type { TileType, CampaignLevel } from '@flowstate/shared-types';
 
-/**
- * 100 bölümlük kampanya (Saga Map) konfigürasyonu.
- * Bölümler ilerledikçe zorluk ve gridSize progresif olarak artar.
- */
+// Her level için allowedTileTypes hesapla
+function getAllowedTiles(levelId: number): TileType[] {
+  if (levelId <= 15)  return ['SOURCE','SINK','STRAIGHT','ELBOW'];
+  if (levelId <= 30)  return ['SOURCE','SINK','STRAIGHT','ELBOW','T_JUNCTION','CROSS'];
+  if (levelId <= 45)  return ['SOURCE','SINK','STRAIGHT','ELBOW','T_JUNCTION','CROSS','MIXER'];
+  if (levelId <= 60)  return ['SOURCE','SINK','STRAIGHT','ELBOW','T_JUNCTION','CROSS','MIXER','ONE_WAY','FILTER'];
+  if (levelId <= 80)  return ['SOURCE','SINK','STRAIGHT','ELBOW','T_JUNCTION','CROSS','MIXER','ONE_WAY','FILTER','SPLITTER'];
+  return ['SOURCE','SINK','STRAIGHT','ELBOW','T_JUNCTION','CROSS','MIXER','ONE_WAY','FILTER','SPLITTER','PORTAL'];
+}
+
+// Her level için difficulty düzelt (şu an çok yavaş artıyor)
+function getDifficulty(id: number): number {
+  if (id<=3)  return id;
+  if (id<=8)  return 3+Math.floor((id-3)/2);
+  if (id<=15) return 5+Math.floor((id-8)/3);
+  if (id<=25) return 6+Math.floor((id-15)/3);
+  if (id<=40) return 7+Math.floor((id-25)/8);
+  if (id<=60) return 8+Math.floor((id-40)/12);
+  if (id<=80) return 9;
+  return 10;
+}
+
+const BOSS = new Set([15,30,45,60,80,100]);
+
 export const CAMPAIGN_LEVELS: CampaignLevel[] = Array.from({ length: 100 }, (_, i) => {
-  const levelIndex = i + 1;
-  
-  // Grid size progression smoothly from 5x5 to 10x10
+  const levelId = i + 1;
+  // gridSize mevcut mantık korunsun ama allowedTileTypes ekle
   let gridSize = 5;
-  if (levelIndex > 8) gridSize = 6;
-  if (levelIndex > 18) gridSize = 7;
-  if (levelIndex > 35) gridSize = 8;
-  if (levelIndex > 55) gridSize = 9;
-  if (levelIndex > 75) gridSize = 10;
+  if (levelId > 8) gridSize = 6;
+  if (levelId > 18) gridSize = 7;
+  if (levelId > 35) gridSize = 8;
+  if (levelId > 55) gridSize = 9;
+  if (levelId > 75) gridSize = 10;
   
-  // Difficulty ramps up more aggressively
-  // Start at difficulty 2 (not 1) and scale up faster
-  let difficulty = 2;
-  
-  if (levelIndex <= 10) {
-    // Levels 1-10: difficulty 2-4
-    difficulty = 2 + Math.floor((levelIndex - 1) / 3);
-  } else if (levelIndex <= 25) {
-    // Levels 11-25: difficulty 4-6
-    difficulty = 4 + Math.floor((levelIndex - 11) / 5);
-  } else if (levelIndex <= 50) {
-    // Levels 26-50: difficulty 6-8
-    difficulty = 6 + Math.floor((levelIndex - 26) / 12);
-  } else if (levelIndex <= 75) {
-    // Levels 51-75: difficulty 8-9
-    difficulty = 8 + Math.floor((levelIndex - 51) / 25);
-  } else {
-    // Levels 76-100: difficulty 9-10
-    difficulty = 9 + Math.floor((levelIndex - 76) / 25);
-  }
-  
-  // Cap at 10
-  difficulty = Math.min(10, difficulty);
-
-  let unlockedMechanics: string[] | undefined = undefined;
-
-  // Milestone mechanic unlocks
-  if (levelIndex === 1) unlockedMechanics = ['Basic Flow'];
-  if (levelIndex === 15) unlockedMechanics = ['Cross Tiles'];
-  if (levelIndex === 30) unlockedMechanics = ['Multi-color Mixers', 'Purple Flow'];
-  if (levelIndex === 60) unlockedMechanics = ['Orange Flow'];
-  if (levelIndex === 85) unlockedMechanics = ['Green Flow'];
+  const difficulty = getDifficulty(levelId);
 
   return {
-    id: levelIndex,
+    id: levelId,
     gridSize,
     difficulty,
-    pointsReward: 50 + (gridSize * 5) + (difficulty * 2),
-    unlockedMechanics
+    pointsReward: (BOSS.has(levelId)?200:50) + (gridSize * 5) + (difficulty * 3),
+    allowedTileTypes: getAllowedTiles(levelId),
+    isBoss: BOSS.has(levelId)
   };
 });

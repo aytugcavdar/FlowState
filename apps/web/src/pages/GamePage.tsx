@@ -117,52 +117,113 @@ function DailyCompletedScreen() {
     );
 }
 
+const PRESETS = [
+    { label: 'Başlangıç', grid: 5, difficulty: 2, color: '#22c55e', icon: '🌱' },
+    { label: 'Orta', grid: 7, difficulty: 5, color: '#eab308', icon: '⚔️' },
+    { label: 'Zor', grid: 9, difficulty: 8, color: '#f97316', icon: '🔥' },
+    { label: 'Uzman', grid: 10, difficulty: 10, color: '#ec4899', icon: '💀' }
+] as const;
+
 /** Pratik modu seçim paneli */
 function PracticeSetup({ onStart }: { onStart: (gridSize: number, difficulty: number) => void }) {
     const lastPracticeDifficulty = useMetaStore(s => s.lastPracticeDifficulty);
     const setLastPracticeDifficulty = useMetaStore(s => s.setLastPracticeDifficulty);
+    const stats = useMetaStore(s => s.stats);
     
+    const [mode, setMode] = useState<'preset' | 'custom'>('preset');
     const [gridSize, setGridSize] = useState(7);
-    const [difficulty, setDifficulty] = useState(lastPracticeDifficulty);
+    const [difficulty, setDifficulty] = useState(lastPracticeDifficulty || 5);
 
-    const handleStart = () => {
+    const handleStartCustom = () => {
         setLastPracticeDifficulty(difficulty);
         onStart(gridSize, difficulty);
+    };
+
+    const handleStartPreset = (p: typeof PRESETS[number]) => {
+        setLastPracticeDifficulty(p.difficulty);
+        onStart(p.grid, p.difficulty);
     };
 
     return (
         <div className="practice-setup glass-panel neon-border" id="practice-setup">
             <h2>🎯 Pratik Modu</h2>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem' }}>
-                Izgara boyutu ve zorluk seviyesini seç.
-            </p>
+            
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', background: 'rgba(0,0,0,0.2)', padding: '4px', borderRadius: '8px' }}>
+                <button 
+                  className={`btn ${mode === 'preset' ? 'btn-primary' : ''}`} 
+                  onClick={() => setMode('preset')}
+                  style={{ flex: 1, padding: '8px', fontSize: '0.85rem', background: mode === 'preset' ? 'var(--color-cyan)' : 'transparent', border: 'none' }}
+                >
+                    Hazır Şablonlar
+                </button>
+                <button 
+                  className={`btn ${mode === 'custom' ? 'btn-primary' : ''}`} 
+                  onClick={() => setMode('custom')}
+                  style={{ flex: 1, padding: '8px', fontSize: '0.85rem', background: mode === 'custom' ? 'var(--color-cyan)' : 'transparent', border: 'none' }}
+                >
+                    Özel Ayar
+                </button>
+            </div>
 
-            <label className="setup-label">Izgara Boyutu: <strong>{gridSize}×{gridSize}</strong></label>
-            <input
-                type="range" min={4} max={10} value={gridSize}
-                onChange={e => setGridSize(Number(e.target.value))}
-                className="setup-slider"
-                id="slider-grid"
-            />
+            {mode === 'preset' && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    {PRESETS.map((p, i) => {
+                        const pbKey = `practice-${p.grid}x${p.grid}`;
+                        const pb = stats.records[pbKey]?.bestTimeSec;
+                        
+                        return (
+                            <button
+                                key={i}
+                                className="mode-card glass-panel"
+                                style={{ borderColor: pb ? p.color : 'rgba(255,255,255,0.1)', padding: '12px', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '8px', cursor: 'pointer', background: 'var(--bg-secondary)' }}
+                                onClick={() => handleStartPreset(p)}
+                            >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                    <span style={{ fontSize: '1.3rem' }}>{p.icon}</span>
+                                    <span style={{ fontSize: '0.75rem', color: p.color, fontWeight: 600 }}>{p.grid}x{p.grid}</span>
+                                </div>
+                                <h3 style={{ margin: 0, fontSize: '1rem', color: 'var(--text-primary)' }}>{p.label}</h3>
+                                {pb ? (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>En Hızlı: <strong style={{color: p.color}}>{pb}s</strong></div>
+                                ) : (
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Oynanmadı</div>
+                                )}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
-            <label className="setup-label" style={{ marginTop: '1rem' }}>
-                Zorluk: <strong>{'⭐'.repeat(Math.min(difficulty, 5))}{difficulty > 5 ? '+' : ''} ({difficulty}/10)</strong>
-            </label>
-            <input
-                type="range" min={1} max={10} value={difficulty}
-                onChange={e => setDifficulty(Number(e.target.value))}
-                className="setup-slider"
-                id="slider-difficulty"
-            />
+            {mode === 'custom' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
+                    <label className="setup-label">Izgara Boyutu: <strong>{gridSize}×{gridSize}</strong></label>
+                    <input
+                        type="range" min={4} max={10} value={gridSize}
+                        onChange={e => setGridSize(Number(e.target.value))}
+                        className="setup-slider"
+                        id="slider-grid"
+                    />
 
-            <button
-                className="btn btn-primary"
-                style={{ marginTop: '2rem', width: '100%' }}
-                onClick={handleStart}
-                id="btn-start-practice"
-            >
-                ▶ Oyna
-            </button>
+                    <label className="setup-label" style={{ marginTop: '1rem' }}>
+                        Zorluk: <strong>{'⭐'.repeat(Math.min(difficulty, 5))}{difficulty > 5 ? '+' : ''} ({difficulty}/10)</strong>
+                    </label>
+                    <input
+                        type="range" min={1} max={10} value={difficulty}
+                        onChange={e => setDifficulty(Number(e.target.value))}
+                        className="setup-slider"
+                        id="slider-difficulty"
+                    />
+
+                    <button
+                        className="btn btn-primary"
+                        style={{ marginTop: '1.5rem', width: '100%' }}
+                        onClick={handleStartCustom}
+                        id="btn-start-practice"
+                    >
+                        ▶ Özel Oyunu Başlat
+                    </button>
+                </div>
+            )}
         </div>
     );
 }

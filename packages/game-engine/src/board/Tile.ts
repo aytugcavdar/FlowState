@@ -33,7 +33,7 @@ const ROTATION_MAP: Record<Direction, Direction> = {
  * Bir yönü belirtilen derece kadar saat yönünde döndürür.
  * Örnek: 'N' + 90° = 'E', 'N' + 180° = 'S'
  */
-function rotateDirection(dir: Direction, rotation: Rotation): Direction {
+export function rotateDirection(dir: Direction, rotation: Rotation): Direction {
   let current = dir;
   const steps = rotation / 90;
   for (let i = 0; i < steps; i++) {
@@ -124,10 +124,14 @@ export class Tile {
 
   /** Tile yapılandırmasından oluşturur */
   static fromConfig(config: { type: TileType; rotation: Rotation; locked?: boolean; filterColor?: FlowColor; solutionRotation?: Rotation; isHinted?: boolean; portalId?: number }): Tile {
+    const autoLocked = config.type === 'SOURCE' 
+      || config.type === 'SINK' 
+      || config.type === 'CROSS';
+      
     return new Tile(
       config.type,
       config.rotation,
-      config.locked ?? (config.type === 'SOURCE' || config.type === 'SINK'),
+      config.locked ?? autoLocked,
       config.filterColor,
       true,
       config.solutionRotation,

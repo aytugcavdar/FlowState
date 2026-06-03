@@ -1,146 +1,72 @@
-// ============================================================
-// FlowOverlay — Akış yayılım görsel katmanı
-// Board üzerinde akan renk animasyonlarını SVG ile çizer.
-// ============================================================
-
 import { useMemo } from 'react';
 import type { CalculatedFlowPath } from '@flowstate/game-engine';
 
 interface FlowOverlayProps {
-    flowPaths: CalculatedFlowPath[];
-    gridSize: number;
-    tileSize: number;
-    gap: number;
-    boardPadding?: number;
-    isSolved?: boolean;
+  flowPaths: CalculatedFlowPath[];
+  gridSize: number;
+  tileSize: number;
+  gap: number;
+  boardPadding?: number;
 }
 
-/** Akış rengine göre CSS renk değeri */
-function flowColorToCSS(color: string): string {
-    switch (color) {
-        case 'cyan': return '#22d3ee';
-        case 'magenta': return '#e879f9';
-        case 'yellow': return '#facc15';
-        case 'white': return '#f1f5f9';
-        case 'purple': return '#a855f7';
-        case 'green': return '#22c55e';
-        case 'orange': return '#f97316';
-        default: return '#94a3b8';
-    }
+function colorCSS(c:string):string {
+  const m:Record<string,string>={
+    cyan:'#22d3ee',magenta:'#e879f9',yellow:'#facc15',
+    white:'#f1f5f9',purple:'#a855f7',green:'#4ade80',orange:'#fb923c',
+  };
+  return m[c]??'#94a3b8';
 }
 
-/** Glow filtre rengi */
-function flowColorToGlow(color: string): string {
-    switch (color) {
-        case 'cyan': return '0 0 8px rgba(34,211,238,0.6)';
-        case 'magenta': return '0 0 8px rgba(232,121,249,0.6)';
-        case 'yellow': return '0 0 8px rgba(250,204,21,0.6)';
-        case 'white': return '0 0 8px rgba(241,245,249,0.6)';
-        case 'purple': return '0 0 8px rgba(168,85,247,0.6)';
-        case 'green': return '0 0 8px rgba(34,197,94,0.6)';
-        case 'orange': return '0 0 8px rgba(249,115,22,0.6)';
-        default: return 'none';
-    }
-}
+export function FlowOverlay({flowPaths,gridSize,tileSize,gap,boardPadding=16}:FlowOverlayProps){
+  const total = gridSize*tileSize+(gridSize-1)*gap+boardPadding*2;
 
-export function FlowOverlay({ flowPaths, gridSize, tileSize, gap, boardPadding = 16 }: FlowOverlayProps) {
-    /** Toplam boyut hesapla */
-    const totalSize = gridSize * tileSize + (gridSize - 1) * gap + boardPadding * 2;
+  const elements = useMemo(()=>{
+    return flowPaths.flatMap((fp,pi)=>{
+      if(!fp.edges?.length) return [];
+      const col = colorCSS(fp.color);
+      const px=(pos:{row:number,col:number})=>boardPadding+pos.col*(tileSize+gap)+tileSize/2;
+      const py=(pos:{row:number,col:number})=>boardPadding+pos.row*(tileSize+gap)+tileSize/2;
+      const full=fp.edges.map(e=>`M${px(e.from)}${py(e.from)}L${px(e.to)}${py(e.to)}`).join(' ');
 
-    /** Akış yollarını SVG path'e çevir */
-    const paths = useMemo(() => {
-        return flowPaths.map((fp, pathIdx) => {
-            if (!fp.edges || fp.edges.length === 0) return null;
+      return [
+        // Glow
+        <path key={`g${pi}`} d={full} fill="none" stroke={col}
+          strokeWidth="5" strokeLinecap="round" opacity="0.35"
+          style={{animation:`fglow 1.8s ease-in-out ${pi*0.2}s infinite alternate`}}/>,
+        // Dash
+        <path key={`d${pi}`} d={full} fill="none" stroke="#fff"
+          strokeWidth="2" strokeLinecap="round" opacity="0.65"
+          strokeDasharray="5 9"
+          style={{animation:`fdash 0.5s ${pi*0.05}s linear infinite`,
+            filter:`drop-shadow(0 0 3px ${col})`}}/>,
+        // Per-edge sparkles
+        ...fp.edges.map((e,ei)=>{
+          const ep=`M${px(e.from)}${py(e.from)}L${px(e.to)}${py(e.to)}`;
+          const dur=(0.45+ei*0.05).toFixed(2);
+          const beg=((pi*0.08+ei*0.03)%1).toFixed(2);
+          return (
+            <circle key={`s${pi}${ei}`} r="3" fill="#fff" opacity="0.9"
+              style={{filter:`drop-shadow(0 0 4px ${col})`}}>
+              <animateMotion dur={`${dur}s`} begin={`${beg}s`}
+                repeatCount="indefinite" path={ep}/>
+            </circle>
+          );
+        }),
+      ];
+    });
+  },[flowPaths,tileSize,gap,boardPadding]);
 
-            // Kesin bağlantılar üzerinden (edges) ayrı dalları bağımsız çizgilerle çiz
-            const pathStr = fp.edges.map(edge => {
-                const pt1 = {
-                    x: boardPadding + edge.from.col * (tileSize + gap) + tileSize / 2,
-                    y: boardPadding + edge.from.row * (tileSize + gap) + tileSize / 2,
-                };
-                const pt2 = {
-                    x: boardPadding + edge.to.col * (tileSize + gap) + tileSize / 2,
-                    y: boardPadding + edge.to.row * (tileSize + gap) + tileSize / 2,
-                };
-                return `M ${pt1.x} ${pt1.y} L ${pt2.x} ${pt2.y}`;
-            }).join(' ');
+  if(!elements.length) return null;
 
-            const color = flowColorToCSS(fp.color);
-
-            return (
-                <g key={`flow-${pathIdx}`}>
-                    {/* Dış Glow Titreşim Katmanı */}
-                    <path
-                        d={pathStr}
-                        fill="none"
-                        stroke={color}
-                        strokeWidth="6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        opacity="0.5"
-                        style={{
-                            animation: `electricPulse 1.5s ease-in-out infinite alternate`,
-                            filter: `drop-shadow(${flowColorToGlow(fp.color)})`,
-                        }}
-                    />
-                    {/* Ana elektrik akış çizgisi — Kesik kesik enerjik akan hat */}
-                    <path
-                        d={pathStr}
-                        fill="none"
-                        stroke="#fff"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        opacity="0.9"
-                        strokeDasharray="8 12"
-                        style={{
-                            animation: `flowElectricity 0.4s linear infinite`,
-                            filter: `drop-shadow(0 0 3px ${color}) drop-shadow(0 0 6px ${color})`,
-                            animationDelay: `${pathIdx * 50}ms`,
-                        }}
-                    />
-                    {/* Akan Lazer Kıvılcım Efekti */}
-                    <circle r="4" fill="#fff" opacity="1" style={{ filter: `drop-shadow(0 0 8px ${color})` }}>
-                        <animateMotion
-                            dur="2s"
-                            repeatCount="indefinite"
-                            path={pathStr}
-                        />
-                    </circle>
-                </g>
-            );
-        }).filter(Boolean);
-    }, [flowPaths, tileSize, gap, boardPadding]);
-
-    if (paths.length === 0) return null;
-
-    return (
-        <svg
-            className="flow-overlay"
-            width={totalSize}
-            height={totalSize}
-            viewBox={`0 0 ${totalSize} ${totalSize}`}
-            style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                pointerEvents: 'none',
-                zIndex: 10,
-            }}
-        >
-            <defs>
-                <style>{`
-          @keyframes flowElectricity {
-            from { stroke-dashoffset: 20; }
-            to { stroke-dashoffset: 0; }
-          }
-          @keyframes electricPulse {
-            from { opacity: 0.3; filter: drop-shadow(0 0 4px rgba(255,255,255,0.4)); }
-            to { opacity: 0.8; filter: drop-shadow(0 0 12px rgba(255,255,255,0.8)); }
-          }
-        `}</style>
-            </defs>
-            {paths}
-        </svg>
-    );
+  return (
+    <svg className="flow-overlay" width={total} height={total}
+      viewBox={`0 0 ${total} ${total}`}
+      style={{position:'absolute',top:0,left:0,pointerEvents:'none',zIndex:10}}>
+      <defs><style>{`
+        @keyframes fdash{from{stroke-dashoffset:14}to{stroke-dashoffset:0}}
+        @keyframes fglow{from{opacity:.15}to{opacity:.55}}
+      `}</style></defs>
+      {elements}
+    </svg>
+  );
 }

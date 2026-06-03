@@ -111,19 +111,18 @@ export class LevelGenerator {
 
   generate(config: GeneratorConfig): PuzzleDefinition {
     if (this.strategy) return this.strategy.generate(config);
-    
-    // ─── DÜZELTME: MIXER frekansını artır ───
-    // Zorluk 2'den itibaren MIXER şansı var, 4+ için %100
-    const multiChance = config.difficulty >= 7 ? 1.0 : 
-                        config.difficulty >= 4 ? 1.0 : 
-                        config.difficulty >= 2 ? 0.8 : 0.4;
-    const useMulti = Math.random() < multiChance;
-    
-    if (useMulti) {
-       const multiResult = LevelGenerator.generateMultiColorWalk(config);
-       if (multiResult) return multiResult;
+
+    // Diff >= 5'te %60 ihtimalle snake walk
+    if (config.difficulty >= 5 && Math.random() < 0.6) {
+      return LevelGenerator.generateSnakeWalk(config);
     }
-    
+
+    // ─── DÜZELTME: MIXER frekansını artır ───
+    const useMulti = Math.random() < (config.difficulty >= 4 ? 1.0 : 0.8);
+    if (useMulti) {
+      const m = LevelGenerator.generateMultiColorWalk(config);
+      if (m) return m;
+    }
     return LevelGenerator.generateRandomWalk(config);
   }
 
@@ -135,12 +134,122 @@ export class LevelGenerator {
    * 4. Kalan boş hücreleri rastgele tile'larla doldur
    * 5. Tüm tile'ların rotasyonlarını karıştır
    */
+  static generateSnakeWalk(config: GeneratorConfig): PuzzleDefinition {
+    const { gridSize, difficulty } = config;
+    const maxAttempts = config.maxAttempts ?? 80;
+
+    for (let attempt=0; attempt<maxAttempts; attempt++) {
+      const puzzle = LevelGenerator.trySnakeWalk(gridSize, difficulty);
+      if (!puzzle) continue;
+
+      const board = Board.fromDefinition(puzzle);
+      const flow  = FlowCalculator.calculate(board);
+      const val   = FlowValidator.checkWin(board, flow);
+
+      if (val.solved) {
+        const adv      = LevelGenerator.injectMechanics(puzzle, flow, difficulty);
+        const branched = LevelGenerator.injectDeadEndBranches(adv, difficulty);
+        return LevelGenerator.scrambleRotations(branched);
+      }
+    }
+    return LevelGenerator.generateRandomWalk(config);
+  }
+
+  private static trySnakeWalk(gridSize: number, difficulty: number): PuzzleDefinition | null {
+    const portMap = new Map<string, Dir[]>();
+    const visited = new Set<string>();
+    const path: {row:number,col:number}[] = [];
+
+    let r=0, c=0, goRight=true;
+    const add = (row:number,col:number,ports:Dir[]) => {
+      portMap.set(`${row},${col}`, ports);
+      visited.add(`${row},${col}`);
+      path.push({row,col});
+    };
+
+    const sourcePos = {row:0, col:0};
+    add(0,0,['S']); // Source çıkışı aşağı
+
+    // Target: gridSize karenin %55-70'i
+    const target = Math.floor(gridSize*gridSize*(0.50+difficulty*0.02));
+
+    while (path.length < target) {
+      const endC = goRight ? gridSize-1 : 0;
+      const dir: Dir = goRight ? 'E' : 'W';
+      const opp: Dir = goRight ? 'W' : 'E';
+
+      // Yatay ilerle
+      while (c !== endC) {
+        const nc = c + (goRight?1:-1);
+        if (visited.has(`${r},${nc}`)) break;
+        const ck = `${r},${c}`;
+        portMap.set(ck, [...(portMap.get(ck)??[]), dir]);
+        c=nc;
+        add(r,c,[opp]);
+        if (path.length>=target) break;
+      }
+
+      if (path.length>=target) break;
+
+      // Aşağı in
+      if (r+1 >= gridSize) break;
+      const ck=`${r},${c}`;
+      portMap.set(ck,[...(portMap.get(ck)??[]),'S']);
+      r++;
+      if (visited.has(`${r},${c}`)) break;
+      add(r,c,['N']);
+      goRight=!goRight;
+    }
+
+    // Sink pozisyonu — son hücreden en uzak köşe
+    const last = path[path.length-1];
+    const sinkPos = {
+      row: last.row===0 ? gridSize-1 : 0,
+      col: last.col===0 ? gridSize-1 : 0,
+    };
+
+    // Sink'e doğru ilerle
+    let cur={...last};
+    const connect = (from:{row:number,col:number}, to:{row:number,col:number}) => {
+      const steps: {row:number,col:number,dir:Dir}[] = [];
+      let {row,col}=from;
+      while (row!==to.row) {
+        const d:Dir=row<to.row?'S':'N';
+        steps.push({row,col,dir:d});
+        row+=row<to.row?1:-1;
+        if (visited.has(`${row},${col}`) && (row!==to.row||col!==to.col)) return false;
+      }
+      while (col!==to.col) {
+        const d:Dir=col<to.col?'E':'W';
+        steps.push({row,col,dir:d});
+        col+=col<to.col?1:-1;
+        if (visited.has(`${row},${col}`) && (row!==to.row||col!==to.col)) return false;
+      }
+      steps.forEach(s => {
+        const k=`${s.row},${s.col}`;
+        portMap.set(k,[...(portMap.get(k)??[]),s.dir]);
+      });
+      const destKey=`${to.row},${to.col}`;
+      if (!visited.has(destKey)) {
+        const inDir=opposite(steps[steps.length-1]?.dir??'S');
+        add(to.row,to.col,[inDir]);
+      }
+      return true;
+    };
+
+    if (!connect(cur, sinkPos)) return null;
+
+    return LevelGenerator.buildPuzzleFromPath(
+      gridSize, path, portMap, sourcePos, sinkPos, difficulty
+    );
+  }
+
   static generateRandomWalk(config: GeneratorConfig): PuzzleDefinition {
     const { gridSize, difficulty } = config;
     const maxAttempts = config.maxAttempts ?? 200;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const puzzle = LevelGenerator.tryGenerateWalk(gridSize, difficulty);
+      const puzzle = LevelGenerator.tryGenerateWalk(config);
       if (!puzzle) continue;
 
       // Doğrulama
@@ -151,7 +260,8 @@ export class LevelGenerator {
       if (validation.solved) {
         // Enjekte et: Portal ve One-Way
         const advancedPuzzle = LevelGenerator.injectMechanics(puzzle, flowResult, difficulty);
-        return LevelGenerator.scrambleRotations(advancedPuzzle);
+        const branched = LevelGenerator.injectDeadEndBranches(advancedPuzzle, difficulty);
+        return LevelGenerator.scrambleRotations(branched);
       }
     }
 
@@ -161,11 +271,11 @@ export class LevelGenerator {
 
   /** İki kaynaklı (MIXER) bulmaca oluşturur */
   static generateMultiColorWalk(config: GeneratorConfig): PuzzleDefinition | null {
-    const { gridSize, difficulty } = config;
+    const { difficulty } = config;
     const maxAttempts = config.maxAttempts ?? 200;
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const puzzle = LevelGenerator.tryGenerateMultiColorWalk(gridSize, difficulty);
+      const puzzle = LevelGenerator.tryGenerateMultiColorWalk(config);
       if (!puzzle) continue;
 
       const board = Board.fromDefinition(puzzle);
@@ -174,14 +284,16 @@ export class LevelGenerator {
 
       if (validation.solved) {
         const advancedPuzzle = LevelGenerator.injectMechanics(puzzle, flowResult, difficulty);
-        return LevelGenerator.scrambleRotations(advancedPuzzle);
+        const branched = LevelGenerator.injectDeadEndBranches(advancedPuzzle, difficulty);
+        return LevelGenerator.scrambleRotations(branched);
       }
     }
     return null;
   }
 
   /** Tek bir deneme — rastgele yürüyüşle puzzle oluşturur */
-  private static tryGenerateWalk(gridSize: number, difficulty: number): PuzzleDefinition | null {
+  private static tryGenerateWalk(config: GeneratorConfig): PuzzleDefinition | null {
+    const { gridSize, difficulty, allowedTileTypes } = config;
     // ─── 1. Kaynak ve hedef konumları ──────────────────────
     // Zorluk arttıkça kaynak/hedef daha farklı konumlara taşınır
     const sourceEdge = randomItem(['left', 'top'] as const);
@@ -222,15 +334,15 @@ export class LevelGenerator {
     portMap.set(`${current.row},${current.col}`, [sourceDir]);
 
     // ─── DÜZELTME: Daha kısa path, daha fazla decoy tile ───
-    // Minimum path length: gridSize'ın karesinin %25'i (çok kısa, çok decoy)
+    // Minimum path length: gridSize'ın karesinin %40'ı (kullanıcı isteği)
     const totalCells = gridSize * gridSize;
-    let minPathLength = Math.floor(totalCells * 0.25);
+    let minPathLength = Math.floor(totalCells * 0.40);
     
     // Küçük ızgaralarda biraz daha uzun (yoksa çok kolay)
     if (gridSize <= 5) {
-      minPathLength = Math.floor(totalCells * 0.35); // %35 hücreyi kullan
+      minPathLength = Math.floor(totalCells * 0.60);
     } else if (gridSize === 6) {
-      minPathLength = Math.floor(totalCells * 0.30); // %30 hücreyi kullan
+      minPathLength = Math.floor(totalCells * 0.50);
     }
     
     // Zorluk ile yol karmaşıklığı - çok az artış
@@ -239,11 +351,11 @@ export class LevelGenerator {
     // Difficulty her seviye için path'e ekstra hücre ekler (minimal)
     let difficultyBonus = 0;
     if (gridSize <= 5) {
-      difficultyBonus = Math.floor(difficulty * 1); // Küçük ızgaralarda her difficulty +1 hücre
+      difficultyBonus = Math.floor(difficulty * 1.5);
     } else if (gridSize <= 7) {
-      difficultyBonus = Math.floor(difficulty * 1.5); // Orta ızgaralarda her difficulty +1.5 hücre
+      difficultyBonus = Math.floor(difficulty * 2.5);
     } else {
-      difficultyBonus = Math.floor(difficulty * 2); // Büyük ızgaralarda her difficulty +2 hücre
+      difficultyBonus = Math.floor(difficulty * 3.5);
     }
     
     const targetLength = Math.min(maxPathLength, minPathLength + difficultyBonus);
@@ -274,7 +386,7 @@ export class LevelGenerator {
             path.push(sinkPos);
 
             return LevelGenerator.buildPuzzleFromPath(
-              gridSize, path, portMap, sourcePos, sinkPos, difficulty
+              gridSize, path, portMap, sourcePos, sinkPos, difficulty, allowedTileTypes
             );
           }
         }
@@ -325,9 +437,10 @@ export class LevelGenerator {
   }
 
   /** İki kaynak, bir MIXER ve bir SINK içeren özel walk mantığı */
-  private static tryGenerateMultiColorWalk(gridSize: number, difficulty: number): PuzzleDefinition | null {
+  private static tryGenerateMultiColorWalk(config: GeneratorConfig): PuzzleDefinition | null {
+    const { gridSize } = config;
     // 1. Önce standart bir yol oluştur (Source A -> Sink)
-    const baseWalk = this.tryGenerateWalkPathOnly(gridSize, difficulty);
+    const baseWalk = this.tryGenerateWalkPathOnly(config);
     if (!baseWalk) return null;
     
     const { path: pathA, portMap, sourcePos: sourceA, sinkPos } = baseWalk;
@@ -427,7 +540,8 @@ export class LevelGenerator {
   }
 
   /** return object for refactoring tryGenerateWalk */
-  private static tryGenerateWalkPathOnly(gridSize: number, difficulty: number) {
+  private static tryGenerateWalkPathOnly(config: GeneratorConfig) {
+      const { gridSize, difficulty } = config;
       // (This recreates the randomWalk logic but returns raw data so tryGenerateWalk and tryGenerateMultiColorWalk can share it)
       const sourceEdge = randomItem(['left', 'top'] as const);
       const sinkEdge = randomItem(['right', 'bottom'] as const);
@@ -535,6 +649,7 @@ export class LevelGenerator {
     sourcePos: { row: number; col: number },
     sinkPos: { row: number; col: number },
     difficulty: number,
+    allowedTileTypes?: TileType[]
   ): PuzzleDefinition {
     const sourceColor: FlowColor = randomItem(SOURCE_COLORS);
     const tiles: TileConfig[][] = [];
@@ -566,36 +681,35 @@ export class LevelGenerator {
           const { type, rotation } = tileForPorts(ports);
           tileRow.push({ type, rotation });
         } else {
-          // ─── DÜZELTME: Daha dengeli decoy tile stratejisi ───
-          // Yol dışı tile'lar için zorluk bazlı çeşitlilik
-          let fillType: TileType;
-          let fillRotation: Rotation;
+          const allowed = allowedTileTypes ?? ['STRAIGHT','ELBOW','T_JUNCTION','CROSS'];
+          const fillPool = allowed.filter(t => !['SOURCE','SINK'].includes(t));
+
+          const fillType: TileType = fillPool.length > 0
+            ? (() => {
+                // Zorluk bazlı ağırlık ver — Denge iyileştirildi
+                const pool = [...fillPool];
+                // Daha pürüzsüz görünüm için basit yolları (STRAIGHT, ELBOW) her zaman havuzda biraz daha baskın tutuyoruz
+                if (pool.includes('STRAIGHT')) pool.push('STRAIGHT');
+                if (pool.includes('ELBOW')) pool.push('ELBOW');
+
+                if (difficulty >= 7 && pool.includes('CROSS')) {
+                    // Eskiden sadece CROSS ve T_JUNCTION atıyordu, bu çok gürültülü (noisy) oluyordu.
+                    // Şimdi havuzu (pool) biraz daha dengeli genişletiyoruz.
+                    pool.push('CROSS', 'T_JUNCTION');
+                } else if (difficulty >= 4 && pool.includes('T_JUNCTION')) {
+                    pool.push('T_JUNCTION', 'T_JUNCTION');
+                }
+                
+                if (difficulty >= 6 && pool.includes('SPLITTER')) {
+                    // Splitter'ı da havuza ekle
+                    pool.push('SPLITTER', 'SPLITTER');
+                }
+                
+                return randomItem(pool as TileType[]);
+              })()
+            : 'STRAIGHT';
           
-          // Zorluk seviyesine göre decoy tile çeşitliliği (daha agresif)
-          if (difficulty <= 1) {
-            // Çok kolay: Sadece STRAIGHT
-            fillType = 'STRAIGHT';
-            fillRotation = randomRotation();
-          } else if (difficulty <= 3) {
-            // Kolay: STRAIGHT ve ELBOW
-            fillType = randomItem(['STRAIGHT', 'STRAIGHT', 'ELBOW']);
-            fillRotation = randomRotation();
-          } else if (difficulty <= 5) {
-            // Orta: STRAIGHT, ELBOW, T_JUNCTION
-            const types: TileType[] = ['STRAIGHT', 'ELBOW', 'ELBOW', 'T_JUNCTION', 'T_JUNCTION'];
-            fillType = randomItem(types);
-            fillRotation = randomRotation();
-          } else if (difficulty <= 7) {
-            // Zor: Daha fazla T_JUNCTION ve CROSS
-            const types: TileType[] = ['ELBOW', 'T_JUNCTION', 'T_JUNCTION', 'T_JUNCTION', 'CROSS', 'CROSS'];
-            fillType = randomItem(types);
-            fillRotation = randomRotation();
-          } else {
-            // Çok Zor: Çoğunlukla karmaşık tile'lar
-            const types: TileType[] = ['T_JUNCTION', 'T_JUNCTION', 'CROSS', 'CROSS', 'CROSS'];
-            fillType = randomItem(types);
-            fillRotation = randomRotation();
-          }
+          let fillRotation = randomRotation();
           
           // Decoy tile'lar için de solutionRotation ayarla
           // (Oyuncunun yanlış rotasyonları denemesini zorlaştırır)
@@ -639,13 +753,16 @@ export class LevelGenerator {
     mixerPos: { row: number; col: number },
     sinkPos: { row: number; col: number },
   ): PuzzleDefinition {
-    // 2 farklı renk seçelim
-    const colorA: FlowColor = 'cyan';
-    const colorB: FlowColor = 'magenta';
+    // Sabit cyan+magenta yerine:
+    const colorPairs: Array<[FlowColor, FlowColor]> = [
+      ['cyan', 'magenta'],    // → purple
+      ['cyan', 'yellow'],     // → green
+      ['magenta', 'yellow'],  // → orange
+    ];
+    const [colorA, colorB] = colorPairs[Math.floor(Math.random() * colorPairs.length)];
     
-    // ─── DÜZELTME: Dinamik renk karışımı hesaplama ───
     // mixColors fonksiyonunu kullanarak gerçek karışımı hesapla
-    const mixedColor = mixColors([colorA, colorB]) ?? 'white'; // cyan + magenta = purple
+    const mixedColor = mixColors([colorA, colorB]) ?? 'white';
 
     const tiles: TileConfig[][] = [];
     const pathSet = new Set(path.map(p => `${p.row},${p.col}`));
@@ -843,24 +960,99 @@ export class LevelGenerator {
                  newTiles[portal2Pos.row][portal2Pos.col].type !== 'SINK') {
                  
                  // Portal yerlestir
+                 const originalTile1 = newTiles[portal1Pos.row][portal1Pos.col];
+                 const originalTile2 = newTiles[portal2Pos.row][portal2Pos.col];
+
                  newTiles[portal1Pos.row][portal1Pos.col] = { type: 'PORTAL', rotation: 0, portalId: 1, solutionRotation: 0 };
                  newTiles[portal2Pos.row][portal2Pos.col] = { type: 'PORTAL', rotation: 0, portalId: 1, solutionRotation: 0 };
                  
                  // Aradaki tilelari decorative filler yap
+                 const originalMids: {r: number, c: number, t: TileConfig}[] = [];
                  for (let k = i + 1; k < j; k++) {
                      const midPos = edges[k].to;
                      if (newTiles[midPos.row][midPos.col].type !== 'MIXER') { // Baska ozel seyleri bozmayalim
+                         originalMids.push({r: midPos.row, c: midPos.col, t: newTiles[midPos.row][midPos.col]});
                          newTiles[midPos.row][midPos.col] = { 
                              type: Math.random() > 0.5 ? 'STRAIGHT' : 'ELBOW', 
                              rotation: Math.random() > 0.5 ? 90 : 0 
                          };
                      }
                  }
+
+                 // Portal ekleme bloğunun sonuna:
+                 const testPuzzlePortal = { ...modifiedPuzzle, tiles: newTiles };
+                 const testBoardPortal = Board.fromDefinition(testPuzzlePortal);
+                 const testFlowPortal = FlowCalculator.calculate(testBoardPortal);
+                 const testValPortal = FlowValidator.checkWin(testBoardPortal, testFlowPortal);
+                 if (!testValPortal.solved) {
+                     // Portal'ı geri al
+                     newTiles[portal1Pos.row][portal1Pos.col] = originalTile1;
+                     newTiles[portal2Pos.row][portal2Pos.col] = originalTile2;
+                     // aradaki tile'ları da geri al
+                     for (const mid of originalMids) {
+                         newTiles[mid.r][mid.c] = mid.t;
+                     }
+                 } else {
+                     modifiedPuzzle = testPuzzlePortal;
+                 }
              }
          }
     }
 
     return modifiedPuzzle;
+  }
+
+  private static injectDeadEndBranches(
+    puzzle: PuzzleDefinition,
+    difficulty: number
+  ): PuzzleDefinition {
+    if (difficulty < 3) return puzzle;
+
+    const maxBranches = Math.min(3, Math.floor(difficulty / 3));
+    const tiles = JSON.parse(JSON.stringify(puzzle.tiles)) as TileConfig[][];
+    const gs = puzzle.gridSize;
+    let added = 0;
+
+    // Path tile'larını bul
+    const pathTiles: {r:number,c:number}[] = [];
+    for (let r=0;r<gs;r++) for (let c=0;c<gs;c++) {
+      const t = tiles[r][c];
+      if (t.type==='STRAIGHT' && !t.locked && t.solutionRotation!==undefined)
+        pathTiles.push({r,c});
+    }
+
+    // Shuffle
+    for (let i=pathTiles.length-1;i>0;i--) {
+      const j=Math.floor(Math.random()*(i+1));
+      [pathTiles[i],pathTiles[j]]=[pathTiles[j],pathTiles[i]];
+    }
+
+    for (const {r,c} of pathTiles) {
+      if (added >= maxBranches) break;
+      const dirs: [number,number][] = [[-1,0],[0,1],[1,0],[0,-1]];
+      for (const [dr,dc] of dirs) {
+        const nr=r+dr, nc=c+dc;
+        if (nr<0||nr>=gs||nc<0||nc>=gs) continue;
+        const nb = tiles[nr][nc];
+        // Komşu boş dolgu tile mi?
+        if (nb.type==='SOURCE'||nb.type==='SINK') continue;
+        if (nb.locked) continue;
+        if (nb.solutionRotation!==undefined) continue; // zaten path
+
+        // STRAIGHT → T_JUNCTION dönüştür
+        const sr = tiles[r][c].solutionRotation ?? 0;
+        tiles[r][c] = { ...tiles[r][c], type:'T_JUNCTION', rotation:sr, solutionRotation:sr };
+
+        // Komşuya dead-end ekle
+        const rot = [0,90,180,270][Math.floor(Math.random()*4)] as Rotation;
+        tiles[nr][nc] = { type:'ELBOW', rotation:rot, solutionRotation:rot };
+
+        added++;
+        break;
+      }
+    }
+
+    return { ...puzzle, tiles };
   }
 
   /** Rotasyonları karıştır — puzzle haline getir */

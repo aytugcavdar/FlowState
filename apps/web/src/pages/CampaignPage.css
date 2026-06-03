@@ -2,6 +2,11 @@
    CampaignPage — Yolculuk v3: 6 Tema Dünyası
    ============================================================ */
 
+.level-node.boss {
+  border-color: var(--color-yellow) !important;
+  box-shadow: 0 0 10px rgba(250,204,21,0.3);
+}
+
 .campaign-page {
     display: flex;
     flex-direction: column;

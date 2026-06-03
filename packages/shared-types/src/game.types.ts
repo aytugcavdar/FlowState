@@ -103,5 +103,6 @@ export interface CampaignLevel {
   gridSize: number;        // Tahta boyutu (5-10 vb.)
   difficulty: number;      // 1-10 arası zorluk (LevelGenerator için)
   pointsReward: number;    // Kazanılacak puan/coin
-  unlockedMechanics?: string[]; // Ekranda göstermek için "Mixer eklendi" gibi bilgi
+  allowedTileTypes?: TileType[];
+  isBoss?: boolean; // Boss seviyesi ise özel gösterim
 }

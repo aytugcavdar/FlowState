@@ -91,6 +91,15 @@ export class Board {
       const neighborTile = this.getTile(neighborPos);
       const oppositeDir = Position.oppositeDirection(dir);
 
+      if (tile.type === 'ONE_WAY') {
+        // ONE_WAY her iki porttan da komşu kabul eder
+        // Yönlendirme FlowCalculator'da hallediliyor
+        if (neighborTile.hasPort(oppositeDir)) {
+          neighbors.push({ pos: neighborPos, direction: dir });
+        }
+        continue;
+      }
+
       // Karşı tile'ın da bu yönde portu açık mı?
       if (neighborTile.hasPort(oppositeDir)) {
         neighbors.push({ pos: neighborPos, direction: dir });

@@ -15,7 +15,7 @@ export const useThemeStore = create<ThemeStoreState>()(
     persist(
         (set) => ({
             activeTheme: 'theme-cyberpunk',
-            unlockedThemes: ['theme-cyberpunk', 'theme-plumber', 'theme-laser'],
+            unlockedThemes: ['theme-cyberpunk'],
             
             setTheme: (theme) => set({ activeTheme: theme }),
             

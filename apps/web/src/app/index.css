@@ -16,9 +16,11 @@
   --color-magenta: #e879f9;
   --color-yellow: #facc15;
   --color-white: #f1f5f9;
+  --color-green: #22c55e;
   --color-cyan-glow: rgba(34, 211, 238, 0.4);
   --color-magenta-glow: rgba(232, 121, 249, 0.4);
   --color-yellow-glow: rgba(250, 204, 21, 0.4);
+  --color-green-glow: rgba(34, 197, 94, 0.4);
 
   /* Metin */
   --text-primary: #f1f5f9;

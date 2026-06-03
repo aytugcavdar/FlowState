@@ -5,22 +5,77 @@
 // ============================================================
 
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import type { RootState } from './store';
+import { useEffect, useState } from 'react';
+import { useMetaStore } from '../features/meta/model/metaStore';
 import { useThemeStore } from '../features/game-board/model/themeStore';
 import { AchievementToast } from '../shared/ui/AchievementToast';
+import { FloatingReward } from '../shared/ui/FloatingReward';
+import { useDispatch, useSelector } from 'react-redux';
+import { toggleSound } from './store';
+import type { RootState } from './store';
 import './Layout.css';
 import './themes.css';
 
 export function Layout() {
     const location = useLocation();
-    const { level, xp, coins, streakCurrent } = useSelector(
-        (state: RootState) => state.progression
-    );
+    const xp = useMetaStore(s => s.xp);
+    const coins = useMetaStore(s => s.coins);
+    const streakCurrent = useMetaStore(s => s.stats.currentStreak);
 
-    /** XP eşik hesaplama */
-    const xpForNextLevel = Math.floor(100 * Math.pow(level, 1.5));
-    const xpProgress = Math.min(100, (xp / xpForNextLevel) * 100);
+    const dispatch = useDispatch();
+    const soundEnabled = useSelector((s: RootState) => s.settings.soundEnabled);
+
+    const [displayCoins, setDisplayCoins] = useState(coins);
+    const [coinAnim, setCoinAnim] = useState(false);
+
+    useEffect(() => {
+        if (coins !== displayCoins) {
+            setCoinAnim(true);
+            const diff = coins - displayCoins;
+            const steps = Math.min(Math.abs(diff), 20);
+            const stepVal = diff / steps;
+            let current = displayCoins;
+            const interval = setInterval(() => {
+                current += stepVal;
+                setDisplayCoins(Math.round(current));
+                if (Math.abs(current - coins) < 1) {
+                    setDisplayCoins(coins);
+                    clearInterval(interval);
+                    setTimeout(() => setCoinAnim(false), 300);
+                }
+            }, 50);
+            return () => clearInterval(interval);
+        }
+    }, [coins, displayCoins]);
+
+    /** Level ve XP eşik hesaplama */
+    const level = Math.floor(1 + Math.sqrt(xp / 50));
+    const currentLevelBaseXP = Math.pow(level - 1, 2) * 50;
+    const xpForNextLevel = Math.pow(level, 2) * 50;
+    const xpProgress = Math.min(100, ((xp - currentLevelBaseXP) / (xpForNextLevel - currentLevelBaseXP)) * 100);
+
+    // Floating Reward handler
+    const [rewardText, setRewardText] = useState<string | null>(null);
+
+    useEffect(() => {
+        const handler = (e: Event) => {
+            setRewardText((e as CustomEvent).detail.text);
+        };
+        window.addEventListener('show-reward', handler);
+        return () => window.removeEventListener('show-reward', handler);
+    }, []);
+
+    // Streak animation
+    const [prevStreak, setPrevStreak] = useState(streakCurrent);
+    const [streakAnim, setStreakAnim] = useState(false);
+
+    useEffect(() => {
+        if (streakCurrent > prevStreak) {
+            setStreakAnim(true);
+            setTimeout(() => setStreakAnim(false), 800);
+            setPrevStreak(streakCurrent);
+        }
+    }, [streakCurrent, prevStreak]);
 
     /** Aktif link kontrolü */
     const isActive = (path: string) => {
@@ -91,14 +146,32 @@ export function Layout() {
                     </div>
                     <div className="stat" id="stat-coins">
                         <span className="stat-label">COIN</span>
-                        <span className="stat-value coin-value">🪙 {coins}</span>
+                        <span className="stat-value coin-value" style={{ transform: coinAnim ? 'scale(1.2)' : 'scale(1)', transition: 'transform .2s' }}>🪙 {displayCoins}</span>
                     </div>
                     {streakCurrent > 0 && (
                         <div className="stat" id="stat-streak">
                             <span className="stat-label">SERİ</span>
-                            <span className="stat-value streak-value">🔥 {streakCurrent}</span>
+                            <span className="stat-value streak-value" style={{ animation: streakAnim ? 'popIn 0.5s cubic-bezier(0.34,1.56,0.64,1)' : 'none' }}>🔥 {streakCurrent}</span>
                         </div>
                     )}
+                    <button
+                        id="sound-toggle"
+                        onClick={() => dispatch(toggleSound())}
+                        style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            fontSize: '1.1rem',
+                            opacity: soundEnabled ? 1 : 0.4,
+                            transition: 'opacity var(--transition-fast)',
+                            padding: '4px',
+                            color: 'var(--text-primary)',
+                        }}
+                        title={soundEnabled ? 'Sesi Kapat' : 'Sesi Aç'}
+                        aria-label="Ses Toggle"
+                    >
+                        {soundEnabled ? '🔊' : '🔇'}
+                    </button>
                 </div>
             </header>
 
@@ -109,6 +182,9 @@ export function Layout() {
 
             {/* ─── Başarım Toast ───────────────────────────────────── */}
             <AchievementToast />
+
+            {/* Floating Reward */}
+            {rewardText && <FloatingReward text={rewardText} onDone={() => setRewardText(null)} />}
 
             {/* ─── Mobil Alt Navigasyon ────────────────────────────── */}
             {renderNav('mobile-nav glass-panel', 'main-nav-mobile', mobileNavItems)}

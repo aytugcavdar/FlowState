@@ -87,6 +87,7 @@ interface GameState {
   
   // ─── İlerleme ───────────────────────────────────────────
   unlockedLevel: number; // Saga Map'teki açık olan en yüksek seviye
+  campaignStars: Record<number, number>; // levelId → stars
 }
 
 
@@ -110,6 +111,7 @@ export const useGameStore = create<GameState>()(
       isTutorial: false,
       tutorialStep: null,
       unlockedLevel: 1, // Baslangicta kilidi acik seviye
+      campaignStars: {},
 
       // ─── Puzzle Başlat ────────────────────────────────────
       startPuzzle: (definition, puzzleId, difficulty) => {
@@ -146,9 +148,19 @@ export const useGameStore = create<GameState>()(
       startDaily: () => {
         const seed = getTodaysSeed();
         const rng = mulberry32(seed);
-        // Minimum 7×7 günlük bulmaca — hiçbir zaman çok kolay olmayacak
-        const gridSize = 7 + (seed % 2); // 7 ya da 8
-        const difficulty = 4 + Math.floor(rng() * 4); // 4-7 arası
+
+        // Günün indeksi (0=Pzt, 6=Paz)
+        const dayOfWeek = new Date().getDay(); // 0=Sun, 1=Mon...
+        const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // 0=Mon...6=Sun
+        
+        // Hafta içi kolay, hafta sonu zor
+        const difficultyByDay = [3, 4, 5, 6, 7, 8, 10]; // Pzt→Paz
+        const difficulty = difficultyByDay[dayIndex];
+        
+        // GridSize de güne göre değişsin
+        const gridByDay = [6, 6, 7, 7, 7, 8, 8];
+        const gridSize = gridByDay[dayIndex];
+
         const generator = new LevelGenerator();
 
         // Deterministik üretim için Math.random'u geçici olarak eziyoruz (JS single-thread olduğu için güvenli)
@@ -188,6 +200,7 @@ export const useGameStore = create<GameState>()(
               gridSize,
               difficulty,
               maxAttempts: 500,
+              allowedTileTypes: levelConfig.allowedTileTypes,
             });
         } finally {
             Math.random = originalRandom;
@@ -234,9 +247,10 @@ export const useGameStore = create<GameState>()(
           let newUnlockedLevel = state.unlockedLevel;
           let stars: 0 | 1 | 2 | 3 = 0; // Çözüm olmadıysa 0
 
+          let currentCampaignStars = state.campaignStars;
+
           if (isNewlySolved) {
-            // Standart ödül metaStore'a ekle
-            useMetaStore.getState().addCoins(50);
+            // Standart ödül metaStore'a ekle (recordSolve'dan gelecek)
             
             // Eger bu bir kampanya leveliyse ve son level cozulduyse, sonrakini ac
             let campaignLvlId: number | undefined;
@@ -260,6 +274,7 @@ export const useGameStore = create<GameState>()(
             stars = 1;
             if (veryFast && noHints) stars = 3;
             else if ((fastEnough && noHints) || veryFast) stars = 2;
+            
             // Meta Store'a kaydet (Achievement)
             setTimeout(() => {
                 useMetaStore.getState().recordSolve({
@@ -272,6 +287,13 @@ export const useGameStore = create<GameState>()(
                     isDaily: state.currentPuzzleId?.startsWith('daily-')
                 });
             }, 0);
+
+            if (campaignLvlId && stars > 0) {
+                const prevStars = state.campaignStars[campaignLvlId] ?? 0;
+                if (stars > prevStars) {
+                    currentCampaignStars = { ...state.campaignStars, [campaignLvlId]: stars };
+                }
+            }
           }
 
           return {
@@ -283,6 +305,7 @@ export const useGameStore = create<GameState>()(
             moveCount: state.moveCount + 1,
             undoStack: [...state.undoStack.slice(-49), snapshot], // Max 50
             unlockedLevel: newUnlockedLevel,
+            campaignStars: currentCampaignStars,
             ...(isNewlySolved && { lastStars: stars }),
           };
         });
@@ -293,10 +316,15 @@ export const useGameStore = create<GameState>()(
         const { board, status } = get();
         if (!board || status !== 'playing') return;
 
-        // İpucu artık üretsiz (günlük modda UI tarafından zaten engelleniyor)
+        // Kontrol et: Global ipucu stoğumuz var mı?
+        const metaStore = useMetaStore.getState();
+        const isDaily = get().currentPuzzleId?.startsWith('daily-') || false;
+        if (!isDaily && metaStore.unspentHints <= 0) return; // Günlük mod dışında hint kalmadıysa blockla
 
         const { board: newBoard, applied } = board.applyHint();
         if (!applied) return; // Uygulanacak ipucu kalmadi
+
+        if (!isDaily) metaStore.useHint(); // Harca
 
         const flowResult = FlowCalculator.calculate(newBoard);
         const validation = FlowValidator.checkWin(newBoard, flowResult);
@@ -415,6 +443,7 @@ export const useGameStore = create<GameState>()(
           hintsUsedInPuzzle: state.hintsUsedInPuzzle,
           currentPuzzleId: state.currentPuzzleId,
           undoStack: state.undoStack,
+          campaignStars: state.campaignStars,
         };
       },
       onRehydrateStorage: () => (state, error) => {

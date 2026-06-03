@@ -105,11 +105,7 @@
     justify-content: center;
 }
 
-/* Orijinal GameStats ve Modal gizleme */
-.ta-board-container .game-stats {
-    display: none !important;
-}
-
+/* Orijinal Modal gizleme */
 .ta-board-container .win-modal-overlay {
     display: none !important;
 }

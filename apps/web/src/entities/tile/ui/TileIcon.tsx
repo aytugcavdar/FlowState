@@ -9,6 +9,8 @@ import type { TileType, FlowColor } from '@flowstate/shared-types';
 interface TileIconProps {
     type: TileType;
     flowColor?: FlowColor | null;
+    filterColor?: FlowColor | null;
+    requiredColors?: FlowColor[];
     size?: number;
     theme?: string;
 }
@@ -47,7 +49,7 @@ function getGlowFilter(color: FlowColor | null | undefined, theme: string): stri
     }
 }
 
-export function TileIcon({ type, flowColor, size = 48, theme = 'theme-cyberpunk' }: TileIconProps) {
+export function TileIcon({ type, flowColor, filterColor, requiredColors, size = 48, theme = 'theme-cyberpunk' }: TileIconProps) {
     const color = getColorValue(flowColor, theme);
     const pipeWidth = flowColor ? 5 : 3.5;
     const hasFlow = !!flowColor;
@@ -70,7 +72,7 @@ export function TileIcon({ type, flowColor, size = 48, theme = 'theme-cyberpunk'
             {theme !== 'theme-laser' && renderEndpoints(type, color, hasFlow)}
 
             {/* Ana çizgiler / borular / prizmalar */}
-            {renderShapes(type, color, pipeWidth, hasFlow, theme)}
+            {renderShapes(type, color, pipeWidth, hasFlow, theme, requiredColors, filterColor)}
         </svg>
     );
 }
@@ -109,7 +111,7 @@ function getPortDirections(type: TileType): string[] {
 }
 
 /** Dinamik şekiller */
-function renderShapes(type: TileType, color: string, sw: number, active: boolean, theme: string) {
+function renderShapes(type: TileType, color: string, sw: number, active: boolean, theme: string, requiredColors?: FlowColor[], filterColor?: FlowColor | null) {
     const opacity = active ? 1 : 0.7;
     const isLaser = theme === 'theme-laser';
     const isPlumber = theme === 'theme-plumber';
@@ -146,22 +148,51 @@ function renderShapes(type: TileType, color: string, sw: number, active: boolean
                 </g>
             );
 
-        case 'SINK':
+        case 'SINK': {
+            const filled = active;
+            const expected = requiredColors?.[0];
+            const displayColor = filled
+                ? color
+                : expected
+                  ? getColorValue(expected, theme)
+                  : getColorValue(null, theme);
+
             return (
                 <g opacity={opacity}>
-                    <line x1="4" y1="24" x2="24" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    <line x1="4" y1="24" x2="24" y2="24" stroke={displayColor} strokeWidth={actualSw} strokeLinecap={cap} />
                     {isLaser ? (
                         <rect x="24" y="16" width="8" height="16" fill="rgba(255,255,255,0.9)" />
                     ) : (
                         <>
-                            <circle cx="28" cy="24" r="10" fill="none" stroke={color} strokeWidth={actualSw * 0.6} />
-                            <circle cx="28" cy="24" r="5" fill="none" stroke={color} strokeWidth={actualSw * 0.5} />
-                            <circle cx="28" cy="24" r="2" fill={color} />
+                            <circle cx="28" cy="24" r="10" fill="none" stroke={displayColor}
+                                strokeWidth={filled ? actualSw * 0.8 : actualSw * 0.5}
+                                strokeDasharray={filled ? undefined : "4 3"}
+                                style={{transition:'all 0.3s ease'}} />
+                            <circle cx="28" cy="24" r="5" fill="none" stroke={displayColor}
+                                strokeWidth={filled ? actualSw * 0.6 : actualSw * 0.4}
+                                style={{transition:'all 0.3s ease'}} />
+                            <circle cx="28" cy="24"
+                                r={filled ? 4 : 2}
+                                fill={filled ? displayColor : 'none'}
+                                stroke={filled ? 'none' : displayColor}
+                                strokeWidth="1.5"
+                                style={{transition:'all 0.4s cubic-bezier(0.34,1.56,0.64,1)'}} />
+                            {filled && (
+                                <path d="M22,24 L26,28 L34,18" fill="none" stroke={displayColor}
+                                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                                    style={{animation:'sinkCheckDraw 0.4s ease-out forwards'}} />
+                            )}
                             {renderPlumberJoint(8, 24)}
+                            {expected && !filled && (
+                                <circle cx="38" cy="10" r="5"
+                                  fill={getColorValue(expected, theme)} opacity="0.75"
+                                  stroke="rgba(0,0,0,0.15)" strokeWidth="1"/>
+                            )}
                         </>
                     )}
                 </g>
             );
+        }
 
         case 'STRAIGHT':
             return (
@@ -177,6 +208,19 @@ function renderShapes(type: TileType, color: string, sw: number, active: boolean
                     )}
                 </g>
             );
+
+        case 'FILTER': {
+            const fColor = filterColor ? getColorValue(filterColor, theme) : color;
+            return (
+                <g opacity={opacity}>
+                    <line x1="24" y1="2" x2="24" y2="46" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    <rect x="16" y="16" width="16" height="16" rx="2" fill="rgba(0,0,0,0.4)" stroke={fColor} strokeWidth="1.5" />
+                    <line x1="18" y1="20" x2="30" y2="20" stroke={fColor} strokeWidth="1" opacity={0.8} />
+                    <line x1="18" y1="24" x2="30" y2="24" stroke={fColor} strokeWidth="1" opacity={0.8} />
+                    <line x1="18" y1="28" x2="30" y2="28" stroke={fColor} strokeWidth="1" opacity={0.8} />
+                </g>
+            );
+        }
 
         case 'ELBOW':
             return (
@@ -200,7 +244,8 @@ function renderShapes(type: TileType, color: string, sw: number, active: boolean
         case 'T_JUNCTION':
             return (
                 <g opacity={opacity}>
-                    <line x1="24" y1="2" x2="24" y2="46" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    <line x1="24" y1="2" x2="24" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    <line x1="24" y1="24" x2="24" y2="46" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
                     <line x1="24" y1="24" x2="46" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
                     {isLaser ? (
                         <polygon points="20,20 28,24 20,28" fill="rgba(255,255,255,0.7)" />
@@ -210,36 +255,69 @@ function renderShapes(type: TileType, color: string, sw: number, active: boolean
                 </g>
             );
 
+        case 'SPLITTER':
+            /* 1 Giriş (Kuzey - y=2'den y=24'e), 2 Çıkış (Doğu ve Batı) */
+            return (
+                <g opacity={opacity}>
+                    <line x1="24" y1="2" x2="24" y2="20" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    <line x1="2" y1="24" x2="46" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    <polygon points="24,28 16,18 32,18" fill={color} opacity={0.9} />
+                    {/* Yön oku (yukarıdan aşağıya geldiğini vurgulamak için küçük bir oyuk) */}
+                    <polygon points="24,25 20,20 28,20" fill="var(--bg-glass)" />
+                </g>
+            );
+
         case 'CROSS':
             return (
                 <g opacity={opacity}>
                     <line x1="24" y1="2" x2="24" y2="46" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
                     <line x1="2" y1="24" x2="46" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
-                    {isLaser ? (
-                        <circle cx="24" cy="24" r="4" fill="rgba(255,255,255,0.9)" />
-                    ) : (
-                        <rect x={24 - actualSw} y={24 - actualSw} width={actualSw * 2} height={actualSw * 2} rx={isPlumber ? 0 : 2} fill={color} opacity={isPlumber ? 1 : 0.3} />
-                    )}
+                    <rect
+                        x={24 - actualSw} y={24 - actualSw}
+                        width={actualSw * 2} height={actualSw * 2}
+                        rx={isPlumber ? 0 : 2} fill={color} opacity={0.5}
+                    />
+                    {/* Kilit göstergesi — sağ üst köşe */}
+                    <circle cx="38" cy="10" r="4" fill="rgba(250,204,21,0.3)" stroke="rgba(250,204,21,0.6)" strokeWidth="1" />
                 </g>
             );
 
-        case 'MIXER':
+        case 'MIXER': {
             return (
                 <g opacity={opacity}>
-                    <line x1="2" y1="24" x2="24" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
-                    <line x1="46" y1="24" x2="24" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
-                    <line x1="24" y1="24" x2="24" y2="46" stroke={color} strokeWidth={actualSw} strokeLinecap={cap} />
+                    {/* Sol giriş */}
+                    <line x1="2" y1="24" x2="18" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap}/>
+                    <polygon points="13,20 20,24 13,28" fill={color} opacity="0.85"/>
+                    {/* Sağ giriş */}
+                    <line x1="46" y1="24" x2="30" y2="24" stroke={color} strokeWidth={actualSw} strokeLinecap={cap}/>
+                    <polygon points="35,20 28,24 35,28" fill={color} opacity="0.85"/>
+                    {/* Çıkış (aşağı) */}
+                    <line x1="24" y1="30" x2="24" y2="46" stroke={color} strokeWidth={actualSw} strokeLinecap={cap}/>
+                    <polygon points="20,37 24,45 28,37" fill={color} opacity="0.85"/>
+                    {/* Merkez */}
                     {isLaser ? (
-                        <polygon points="16,24 32,24 24,36" fill="rgba(255,255,255,0.8)" />
+                        <polygon points="16,24 32,24 24,36" fill="rgba(255,255,255,0.8)"/>
                     ) : (
                         <>
-                            <circle cx="24" cy="24" r="7" fill="none" stroke={color} strokeWidth={actualSw * 0.6} />
-                            <path d="M20,21 L28,27 M28,21 L20,27" stroke={color} strokeWidth={actualSw * 0.4} />
+                            <circle cx="24" cy="24" r={active ? 8 : 7}
+                                fill="none" stroke={color}
+                                strokeWidth={active ? actualSw*0.8 : actualSw*0.5}
+                                style={{transition:'all 0.3s ease'}}/>
+                            <circle cx="24" cy="24" r={active ? 4 : 2.5}
+                                fill={color} opacity={active ? 1 : 0.4}
+                                style={{transition:'all 0.4s ease'}}/>
+                            {active && (
+                                <circle cx="24" cy="24" r="7"
+                                    fill="none" stroke={color} strokeWidth={actualSw*0.35}
+                                    strokeDasharray="4 3"
+                                    style={{animation:'mixerRotate 1.5s linear infinite',transformOrigin:'24px 24px'}}/>
+                            )}
                             {renderPlumberJoint(24, 24)}
                         </>
                     )}
                 </g>
             );
+        }
 
         case 'PORTAL':
             return (

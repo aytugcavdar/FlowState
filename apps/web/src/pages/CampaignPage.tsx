@@ -31,6 +31,7 @@ export function CampaignPage() {
     const navigate = useNavigate();
     const { playClick } = useSound();
     const unlockedLevel = useGameStore(s => s.unlockedLevel);
+    const campaignStars = useGameStore(s => s.campaignStars);
     const startCampaignLevel = useGameStore(s => s.startCampaignLevel);
 
     const currentWorldRef = useRef<HTMLDivElement>(null);
@@ -116,16 +117,21 @@ export function CampaignPage() {
                                         return (
                                             <button
                                                 key={level.id}
-                                                className={`level-node ${isUnlocked ? 'unlocked' : 'locked'} ${isCurrent ? 'current' : ''}`}
+                                                className={`level-node ${isUnlocked ? 'unlocked' : 'locked'} ${isCurrent ? 'current' : ''} ${level.isBoss ? 'boss' : ''}`}
                                                 onClick={() => handleNodeClick(level.id)}
                                                 disabled={isLocked}
-                                                title={`Bölüm ${level.id} · ${diff}`}
+                                                title={`Bölüm ${level.id}${level.isBoss ? ' 👑' : ''} · ${diff}`}
                                             >
                                                 {isLocked ? '🔒' : (
                                                     <>
                                                         <span className="level-num">{level.id}</span>
                                                         {isCurrent && <span className="current-pulse" />}
                                                     </>
+                                                )}
+                                                {isUnlocked && !isCurrent && (campaignStars[level.id] ?? 0) > 0 && (
+                                                    <span style={{position:'absolute',bottom:1,right:2,fontSize:'0.45rem',letterSpacing:'-2px'}}>
+                                                        {'⭐'.repeat(campaignStars[level.id])}
+                                                    </span>
                                                 )}
                                             </button>
                                         );

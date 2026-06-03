@@ -47,6 +47,7 @@ export interface MetaStoreState {
     unlockedAchievements: string[];
     xp: number;
     coins: number; // ← Coins artık burada (tek kaynak)
+    unspentHints: number; // Global reserve of hints that can be used across puzzles
     stats: MetaStats;
     /** Günlük bulmacayı son tamamlama tarihi (YYYY-MM-DD) */
     lastDailyCompletedDate: string | null;
@@ -62,6 +63,8 @@ export interface MetaStoreState {
     // Actions
     addCoins: (amount: number) => void;
     spendCoins: (amount: number) => void;
+    addHints: (amount: number) => void;
+    useHint: () => void;
     recordSolve: (params: { seconds: number, moves: number, usedHints: boolean, isPerfect: boolean, gridSize: number, campaignLevelId?: number, isDaily?: boolean }) => {
         isNewRecordTime: boolean;
         isNewRecordMoves: boolean;
@@ -102,6 +105,7 @@ export const useMetaStore = create<MetaStoreState>()(
         unlockedAchievements: [],
             xp: 0,
             coins: 100, // Başlangıç hediyesi
+            unspentHints: 3, // Başlangıçta 3 ipucu ver
             stats: INITIAL_STATS,
             lastDailyCompletedDate: null,
             lastPracticeDifficulty: 3, // Varsayılan zorluk
@@ -109,6 +113,8 @@ export const useMetaStore = create<MetaStoreState>()(
 
             addCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins + amount) })),
             spendCoins: (amount) => set((state) => ({ coins: Math.max(0, state.coins - amount) })),
+            addHints: (amount) => set((state) => ({ unspentHints: state.unspentHints + amount })),
+            useHint: () => set((state) => ({ unspentHints: Math.max(0, state.unspentHints - 1) })),
             
             setLastPracticeDifficulty: (difficulty) => set({ lastPracticeDifficulty: difficulty }),
 

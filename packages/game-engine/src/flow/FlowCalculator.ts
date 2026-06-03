@@ -131,6 +131,7 @@ export class FlowCalculator {
               shouldPropagate = true;
            }
         }
+        // CROSS tile'lar renk karıştırmaz, sadece geldiği yöne devam eder
 
         // Portal Teleportation
         if (tile.type === 'PORTAL') {
@@ -161,11 +162,36 @@ export class FlowCalculator {
           for (const { pos: neighborPos, direction } of neighbors) {
             if (fromPos && neighborPos.row === fromPos.row && neighborPos.col === fromPos.col) continue;
 
+            // CROSS tile
+            if (tile.type === 'CROSS' && fromDir) {
+              const expectedOutDir = fromDir === 'N' ? 'S' : fromDir === 'S' ? 'N' : fromDir === 'E' ? 'W' : 'E';
+              if (direction !== expectedOutDir) continue;
+            }
+
+            // ONE_WAY tile
+            if (tile.type === 'ONE_WAY' && fromDir) {
+              // fromDir is absolute relative to board. We need to check relative to tile rot.
+              // ONE_WAY: ['N', 'S']. Let's assume input is S, output is N at rot 0.
+              const absIn = rotateDir('S', tile.rotation);
+              if (fromDir !== absIn) continue; // Flow can only enter from 'S' port
+            }
+
+            // SPLITTER tile
+            if (tile.type === 'SPLITTER' && fromDir) {
+              // SPLITTER: ['N', 'E', 'W']. Base (input) is N.
+              const absInputPort = rotateDir('N', tile.rotation);
+              if (fromDir !== absInputPort) {
+                // Tried to enter from arms, block it!
+                continue;
+              }
+              // If entered from base, it naturally goes to remaining open ports via getConnectedNeighbors.
+            }
+
             queue.push({
               pos: neighborPos,
               color: outColor,
               fromPos: pos,
-              fromDir: Position.oppositeDirection(direction),
+              fromDir: direction === 'N' ? 'S' : direction === 'S' ? 'N' : direction === 'E' ? 'W' : 'E',
             });
           }
         }
@@ -199,12 +225,18 @@ export class FlowCalculator {
       getFlow(pos: Position): FlowColor | null {
         const key = `${pos.row},${pos.col}`;
         const info = tileFlows.get(key);
-        // Eğer MIXER ise karışmış rengi göster
-        if (info && info.colors.length > 1) {
-           const mixed = mixColors(info.colors);
-           return mixed ?? 'white';
+        if (!info) return null;
+        
+        // MIXER tile'lar karişimi çizer. 
+        // CROSS gibi diger tile'lar iki renk iceriyorsa görsel amacli en son rengi veya ozel bir renk cizebilir.
+        // Aslinda UI'in bu bilgiyi daha iyi islemesi icin getFlow tek render dondurur.
+        // MIXER disinda mixColors cagirmayalim ki CROSS tile mor çikmasin, en son giren renk ciksin.
+        const tile = board.getTile(pos);
+        if (info.colors.length > 1 && tile.type === 'MIXER') {
+          const mixed = mixColors(info.colors);
+          return mixed ?? info.colors[info.colors.length - 1];
         }
-        return info?.colors[info?.colors.length - 1] ?? null;
+        return info.colors[info.colors.length - 1] ?? null;
       },
     };
   }
